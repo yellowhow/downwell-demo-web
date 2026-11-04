@@ -924,7 +924,7 @@ System.register("chunks:///_virtual/Enemy.ts", ['./rollupPluginModLoBabelHelpers
 });
 
 System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Enemy.ts', './LevelData.ts', './PlayerHealth.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, FixedStepDriver, getTuning, BulletPool, Enemy, LEVEL_ROWS, LEVEL_COLS, LEVEL_GRID, PlayerHealth;
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, FixedStepDriver, getTuning, BulletPool, Enemy, PLATFORM_SPECS, platformTopY, LEVEL_ROWS, LEVEL_COLS, LEVEL_GRID, PlayerHealth;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -947,6 +947,8 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
     }, function (module) {
       Enemy = module.Enemy;
     }, function (module) {
+      PLATFORM_SPECS = module.PLATFORM_SPECS;
+      platformTopY = module.platformTopY;
       LEVEL_ROWS = module.LEVEL_ROWS;
       LEVEL_COLS = module.LEVEL_COLS;
       LEVEL_GRID = module.LEVEL_GRID;
@@ -959,42 +961,27 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
       var ccclass = _decorator.ccclass;
       var ENEMY_POOL_SIZE = 12; // TODO 待外置到 tuning
 
-      var INITIAL_SPAWNS = [{
-        kind: 'bat',
-        x: 80,
-        y: -160,
-        hp: 1
-      }, {
-        kind: 'bat',
-        x: 70,
-        y: -300,
-        hp: 1
-      }, {
-        kind: 'bat',
-        x: 96,
-        y: -460,
-        hp: 1
-      }, {
-        kind: 'bat',
-        x: 60,
-        y: -620,
-        hp: 1
-      }, {
-        kind: 'snail',
-        x: 56,
-        y: -344,
-        hp: 2
-      }, {
-        kind: 'snail',
-        x: 104,
-        y: -504,
-        hp: 2
-      }, {
-        kind: 'snail',
-        x: 80,
-        y: -784,
-        hp: 2
-      }];
+      /** 在 PLATFORM_SPECS 中下标 index 处取平台；若为 middle 则向后顺延至 left/right。 */
+      function snailPlatformAtIndex(index) {
+        for (var i = index; i < PLATFORM_SPECS.length; i += 1) {
+          var spec = PLATFORM_SPECS[i];
+          if (spec.side !== 'middle') {
+            return {
+              spec: spec,
+              usedIndex: i
+            };
+          }
+        }
+        throw new Error("[EnemyManager] no left/right platform at or after index " + index);
+      }
+      function snailSpawnFromSpec(spec) {
+        var x = spec.col0 * 8 + spec.len * 8 / 2;
+        var y = platformTopY(spec) + 16;
+        return {
+          x: x,
+          y: y
+        };
+      }
       var EnemyManager = exports('EnemyManager', (_dec = ccclass('EnemyManager'), _dec(_class = /*#__PURE__*/function (_Component) {
         _inheritsLoose(EnemyManager, _Component);
         function EnemyManager() {
@@ -1069,21 +1056,33 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
           this._stepBound = true;
         }
 
-        // 约束：出生列 x=80，蝙蝠横向必须离它 ≥36px（玩家半宽12 + 蝙蝠半宽12 + 12 余量），
-        // 否则开局自由落体时会被必然命中（实测曾一进游戏 4 心 → 1 心）。
+        // 约束：蜗牛必须站在 left/right 平台中心；蝙蝠悬在平台行之间的空档（y = -row*8-4），
+        // 横向 x 左右交替，避免开局落体路径上必然碰撞。
         ;
 
         _proto._spawnInitial = function _spawnInitial() {
           if (!this._poolReady) {
             return;
           }
-          this._spawnOne('bat', 46, -155, 1);
-          this._spawnOne('bat', 114, -300, 1);
-          this._spawnOne('bat', 50, -460, 1);
-          this._spawnOne('bat', 110, -620, 1);
-          for (var i = 4; i < INITIAL_SPAWNS.length; i += 1) {
-            var s = INITIAL_SPAWNS[i];
-            this._spawnOne(s.kind, s.x, s.y, s.hp);
+          var batRows = [13, 27, 41, 55];
+          var batXs = [60, 100, 58, 102];
+          for (var i = 0; i < batRows.length; i += 1) {
+            var row = batRows[i];
+            this._spawnOne('bat', batXs[i], -row * 8 - 4, 1);
+          }
+          var snailIndices = [3, 8, 12];
+          for (var _i = 0, _snailIndices = snailIndices; _i < _snailIndices.length; _i++) {
+            var idx = _snailIndices[_i];
+            var _snailPlatformAtIndex = snailPlatformAtIndex(idx),
+              spec = _snailPlatformAtIndex.spec,
+              usedIndex = _snailPlatformAtIndex.usedIndex;
+            if (usedIndex !== idx) {
+              console.warn("[EnemyManager] snail slot index " + idx + " is middle (row " + PLATFORM_SPECS[idx].row + "); using index " + usedIndex + " row " + spec.row + " side " + spec.side);
+            }
+            var _snailSpawnFromSpec = snailSpawnFromSpec(spec),
+              x = _snailSpawnFromSpec.x,
+              y = _snailSpawnFromSpec.y;
+            this._spawnOne('snail', x, y, 2);
           }
         };
         _proto._spawnOne = function _spawnOne(kind, x, y, hp) {
@@ -1940,14 +1939,19 @@ System.register("chunks:///_virtual/KeyboardInput.ts", ['./rollupPluginModLoBabe
   };
 });
 
-System.register("chunks:///_virtual/LevelData.ts", ['cc'], function (exports) {
-  var cclegacy;
+System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc'], function (exports) {
+  var _createForOfIteratorHelperLoose, cclegacy;
   return {
     setters: [function (module) {
+      _createForOfIteratorHelperLoose = module.createForOfIteratorHelperLoose;
+    }, function (module) {
       cclegacy = module.cclegacy;
     }],
     execute: function () {
-      exports('assertLevel', assertLevel);
+      exports({
+        assertLevel: assertLevel,
+        platformTopY: platformTopY
+      });
       cclegacy._RF.push({}, "e7c3dkaK09OCJxtGlt+DyxI", "LevelData", undefined);
       /** 手摆 3 屏竖井。格子边长按 DW-13 写成 8px；总高 852px = 106.5 格，上限取 106 格。 */
       var LEVEL_COLS = exports('LEVEL_COLS', 20);
@@ -1958,6 +1962,85 @@ System.register("chunks:///_virtual/LevelData.ts", ['cc'], function (exports) {
       var PLAYABLE_COL0 = WALL_THICKNESS;
       var PLAYABLE_COL1 = LEVEL_COLS - WALL_THICKNESS - 1; // 15
 
+      /** 13 层落脚平台：行距 7 行，侧别 left → right → middle 循环。 */
+      var PLATFORM_SPECS = exports('PLATFORM_SPECS', [{
+        row: 10,
+        side: 'left',
+        col0: 4,
+        len: 5
+      }, {
+        row: 17,
+        side: 'right',
+        col0: 11,
+        len: 5
+      }, {
+        row: 24,
+        side: 'middle',
+        col0: 9,
+        len: 3
+      }, {
+        row: 31,
+        side: 'left',
+        col0: 4,
+        len: 5
+      }, {
+        row: 38,
+        side: 'right',
+        col0: 11,
+        len: 5
+      }, {
+        row: 45,
+        side: 'middle',
+        col0: 9,
+        len: 3
+      }, {
+        row: 52,
+        side: 'left',
+        col0: 4,
+        len: 5
+      }, {
+        row: 59,
+        side: 'right',
+        col0: 11,
+        len: 5
+      }, {
+        row: 66,
+        side: 'middle',
+        col0: 9,
+        len: 3
+      }, {
+        row: 73,
+        side: 'left',
+        col0: 4,
+        len: 5
+      }, {
+        row: 80,
+        side: 'right',
+        col0: 11,
+        len: 5
+      }, {
+        row: 87,
+        side: 'middle',
+        col0: 9,
+        len: 3
+      }, {
+        row: 94,
+        side: 'left',
+        col0: 4,
+        len: 5
+      }]);
+
+      /**
+       * 平台顶面 y：第 R 行格子占 y ∈ [-(R+1)*TILE_PX, -R*TILE_PX]，顶边为 -R*TILE_PX。
+       */
+      function platformTopY(spec) {
+        return -spec.row * TILE_PX;
+      }
+      function applyPlatformSpec(grid, spec) {
+        for (var i = 0; i < spec.len; i++) {
+          grid[spec.row][spec.col0 + i] = 1;
+        }
+      }
       function buildLevelGrid() {
         var grid = [];
         for (var row = 0; row < LEVEL_ROWS; row++) {
@@ -1969,22 +2052,11 @@ System.register("chunks:///_virtual/LevelData.ts", ['cc'], function (exports) {
           }
           grid.push(cells);
         }
-        // 从第 45 行起每隔约 20 行一层实心平台，左右交替，中间留缺口。
-        placePlatform(grid, 45, 'left', 5);
-        placePlatform(grid, 65, 'right', 5);
-        placePlatform(grid, 85, 'left', 4);
+        for (var _i = 0, _PLATFORM_SPECS = PLATFORM_SPECS; _i < _PLATFORM_SPECS.length; _i++) {
+          var spec = _PLATFORM_SPECS[_i];
+          applyPlatformSpec(grid, spec);
+        }
         return grid;
-      }
-      function placePlatform(grid, row, side, length) {
-        if (side === 'left') {
-          for (var i = 0; i < length; i++) {
-            grid[row][PLAYABLE_COL0 + i] = 1;
-          }
-          return;
-        }
-        for (var _i = 0; _i < length; _i++) {
-          grid[row][PLAYABLE_COL1 - _i] = 1;
-        }
       }
       var LEVEL_GRID = exports('LEVEL_GRID', buildLevelGrid());
 
@@ -1993,6 +2065,21 @@ System.register("chunks:///_virtual/LevelData.ts", ['cc'], function (exports) {
         x: LEVEL_COLS * TILE_PX / 2,
         y: -4 * TILE_PX
       });
+      function maxConsecutiveEmptyInPlayable(row) {
+        var best = 0;
+        var run = 0;
+        for (var col = PLAYABLE_COL0; col <= PLAYABLE_COL1; col++) {
+          if (row[col] === 0) {
+            run += 1;
+            if (run > best) {
+              best = run;
+            }
+          } else {
+            run = 0;
+          }
+        }
+        return best;
+      }
       function assertLevel() {
         var spawnCol = Math.floor(SPAWN_POS.x / TILE_PX);
         var spawnRow = Math.floor(-SPAWN_POS.y / TILE_PX);
@@ -2001,18 +2088,24 @@ System.register("chunks:///_virtual/LevelData.ts", ['cc'], function (exports) {
         } else if (LEVEL_GRID[spawnRow][spawnCol] === 1) {
           console.error("[LevelData] spawn sits in solid at row " + spawnRow + " col " + spawnCol);
         }
-        for (var row = 0; row < FLOOR_START_ROW; row++) {
-          var empty = 0;
-          var solid = 0;
+        for (var row = 0; row <= 9; row++) {
           for (var col = PLAYABLE_COL0; col <= PLAYABLE_COL1; col++) {
             if (LEVEL_GRID[row][col] === 1) {
-              solid += 1;
-            } else {
-              empty += 1;
+              console.error("[LevelData] row 0~9 must be empty in playable cols; solid at row " + row + " col " + col);
             }
           }
-          if (solid > 0 && empty < 4) {
-            console.error("[LevelData] platform gap < 4 tiles at row " + row + " (empty=" + empty + ")");
+        }
+        for (var _row = 0; _row < FLOOR_START_ROW; _row++) {
+          var maxEmpty = maxConsecutiveEmptyInPlayable(LEVEL_GRID[_row]);
+          if (maxEmpty < 4) {
+            console.error("[LevelData] row " + _row + " has no run of 4+ consecutive empty tiles in playable cols (max=" + maxEmpty + ")");
+          }
+        }
+        for (var _iterator = _createForOfIteratorHelperLoose(PLATFORM_SPECS), _step; !(_step = _iterator()).done;) {
+          var spec = _step.value;
+          var colEnd = spec.col0 + spec.len - 1;
+          if (spec.col0 < PLAYABLE_COL0 || colEnd > PLAYABLE_COL1) {
+            console.error("[LevelData] platform at row " + spec.row + " out of playable cols: col0=" + spec.col0 + " len=" + spec.len);
           }
         }
       }
