@@ -1,0 +1,50 @@
+{
+  "meta": { "version": "0.4.0", "date": "2026-11-04" },
+  "loop": {
+    "fixedStepHz":   { "value": 60, "version": "0.1.0", "date": "2026-11-04", "why": "DW-01 实录：18 个房间 speed 全为 60" },
+    "maxCatchUpSteps": { "value": 5, "version": "0.1.0", "date": "2026-11-04", "why": "防后台切回时补步雪崩" }
+  },
+  "render": {
+    "designWidth":  { "value": 160, "version": "0.1.0", "date": "2026-11-04", "why": "DW-01 实录：内部虚拟分辨率 160x284" },
+    "designHeight": { "value": 284, "version": "0.1.0", "date": "2026-11-04", "why": "同上" },
+    "pixelScale":   { "value": 2,   "version": "0.1.0", "date": "2026-11-04", "why": "DW-01 实录：视口 320x568，2 倍整数放大" }
+  },
+  "player": {
+    "bodyWidth":         { "value": 24,      "version": "0.2.0", "date": "2026-11-04", "why": "DW-13 美术规范：主角 24x24" },
+    "bodyHeight":        { "value": 24,      "version": "0.2.0", "date": "2026-11-04", "why": "同上" },
+    "terminalFallSpeed": { "value": 4.7333,  "version": "0.2.0", "date": "2026-11-04", "why": "一屏 284px / 1.0s / 60 步长 = 4.733 px/step（DW-17 §3.2 区间 3.9~4.7 取上沿，拍板项①已定 1.0s/屏）" },
+    "gravity":           { "value": 0.4,     "version": "0.2.0", "date": "2026-11-04", "why": "DW-17 §4 推荐区间 0.35~0.5 px/step²，取中值" },
+    "horizontalSpeed":   { "value": 1.2,     "version": "0.2.0", "date": "2026-11-04", "why": "1s 跨 72px = 3 身位（DW-17 §3.2）" },
+    "accelSteps":        { "value": 3,       "version": "0.2.0", "date": "2026-11-04", "why": "起速用 3 步到全速，≈0.05s 缓动（拍板项②：有黏滞）" },
+    "jumpInitialSpeed":  { "value": 5.99,    "version": "0.2.1", "date": "2026-11-04", "why": "离散欧拉积分比连续解多走约半个 v0；6.1968→实测 51.15px，修正为 5.99 使实测落回 48±5%" },
+    "jumpReleaseMode":   { "value": "cut",   "version": "0.2.0", "date": "2026-11-04", "why": "松键即把上升速度归零（拍板项③：马里奥式截断）" }
+  },
+  "level": {
+    "tileSize":            { "value": 8, "version": "0.2.0", "date": "2026-11-04", "why": "DW-13：8px grid" },
+    "wellWidthTiles":      { "value": 20, "version": "0.2.0", "date": "2026-11-04", "why": "160px / 8 = 20 格；两侧各 4 格墙 → 可活动区 12 格 = 96px" },
+    "wallThicknessTiles":  { "value": 4, "version": "0.2.0", "date": "2026-11-04", "why": "墙厚 32px，视觉上像竖井井壁" }
+  },
+  "gunboots": {
+    "fireIntervalSteps":   { "value": 8,     "version": "0.3.0", "date": "2026-11-04", "why": "60 步/秒 ÷ 8 = 7.5 发/秒，DW-02 只给了 scrBurstFire 一个符号，射速取这个量级" },
+    "bulletSpeed":         { "value": 9,     "version": "0.3.0", "date": "2026-11-04", "why": "px/step，约 540 px/s，比终端下落 4.7 快一倍，保证子弹先落地" },
+    "bulletLifeSteps":     { "value": 40,    "version": "0.3.0", "date": "2026-11-04", "why": "0.67s 生命周期；撞墙/地板也会消失" },
+    "bulletWidth":         { "value": 3,     "version": "0.3.0", "date": "2026-11-04", "why": "占位尺寸，DW-05 的正式弹道参数后面接" },
+    "bulletHeight":        { "value": 6,     "version": "0.3.0", "date": "2026-11-04", "why": "同上" },
+    "chargeMax":           { "value": 8,     "version": "0.3.0", "date": "2026-11-04", "why": "DW-02 §3.2：sprHudBigCharge 8 帧填充 → 推断 8 格" },
+    "chargeCostPerShot":   { "value": 1,     "version": "0.3.0", "date": "2026-11-04", "why": "一格一发，8 发打空" },
+    "rechargeDelaySteps":  { "value": 45,    "version": "0.3.0", "date": "2026-11-04", "why": "停火 0.75s 后开始回充，DW-02 的 playerChargeTimer 推断" },
+    "rechargeStepsPerCell":{ "value": 12,    "version": "0.3.0", "date": "2026-11-04", "why": "每格 0.2s，打空后 1.6s 回满" },
+    "recoilMode":          { "value": "impulse", "version": "0.3.1", "date": "2026-11-04", "why": "用户试玩拍板：每发都要有向上冲量（impulse），不要 cap 的持续压制模型" },
+    "fallSpeedFactorWhileFiring": { "value": 0.45, "version": "0.3.0", "date": "2026-11-04", "why": "开火时下落速度上限 = terminal × 0.45，即 DW-02 的「半速悬停」" },
+    "recoilPop":           { "value": 0.55,  "version": "0.3.0", "date": "2026-11-04", "why": "每发一次性抬头量 px/step，给点射节律的触感；cap 模式下也叠加" },
+    "recoilMaxRise":       { "value": 6.0,   "version": "0.3.2", "date": "2026-11-04", "why": "recoilImpulse 提到 5.6 后，旧上限 4.0 会把单发冲量砍掉 1.6；放宽到 6.0 让冲量完整生效，仍不足以飞出屏幕顶部" },
+    "recoilImpulse":       { "value": 5.6,   "version": "0.3.2", "date": "2026-11-04", "why": "用户要求每发可见抬头；原 3.4 被重力(0.4×8步)抵消，净 +0.2 px/step 肉眼不可见。改 5.6 → 每发净 +2.4 px/step，从终端 -4.73 一发打到 +0.87（短暂上升），连射可持续悬浮但受 8 格充能限制" }
+  },
+  "health": {
+    "maxHp":              { "value": 4,   "version": "0.4.0", "date": "2026-11-04", "why": "Downwell 原作初始 4 心，DW-03 §7 给出受击无敌 0.5~0.7s 的建议区间" },
+    "invulnSteps":        { "value": 36,  "version": "0.4.0", "date": "2026-11-04", "why": "60 步/秒 × 0.6s = 36 步，取 DW-03 §7 建议区间中点" },
+    "knockbackVx":        { "value": 1.6, "version": "0.4.0", "date": "2026-11-04", "why": "受击横向击退，约 1.3 倍移动速度，够看出被弹开" },
+    "knockbackVy":        { "value": 2.2, "version": "0.4.0", "date": "2026-11-04", "why": "受击向上弹起量，小于跳跃初速 5.99 的一半，不会被弹飞" },
+    "deathRestartDelaySteps": { "value": 30, "version": "0.4.0", "date": "2026-11-04", "why": "死亡面板出现后 0.5s 内忽略点击，防手滑瞬间重开" }
+  }
+}
