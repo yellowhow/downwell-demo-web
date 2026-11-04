@@ -78,16 +78,16 @@
     以下脚本块对应 Cocos Creator 3.8.5 官方
     resources/3d/engine/templates/web-mobile/index-plugin.ejs 渲染结果。
     cc.js 不直接 <script src="cocos-js/cc.js">（那是 SystemJS 模块），
-    而是由 src/import-map.json?v=20261104235900 映射 "cc" -> cocos-js/cc.js，再由 index.js System.import('cc')。
+    而是由 src/import-map.json 映射 "cc" -> cocos-js/cc.js，再由 index.js System.import('cc')。
   -->
   <!-- Polyfills bundle. -->
-  <script src="src/polyfills.bundle.js?v=20261104235900" charset="utf-8"> </script>
+  <script src="src/polyfills.bundle.js?v=20261105002233" charset="utf-8"> </script>
 
   <!-- SystemJS support. -->
-  <script src="src/system.bundle.js?v=20261104235900" charset="utf-8"> </script>
+  <script src="src/system.bundle.js?v=20261105002233" charset="utf-8"> </script>
 
   <!-- Import map -->
-  <script src="src/import-map.json?v=20261104235900" type="systemjs-importmap" charset="utf-8"> </script>
+  <script src="src/import-map.json" type="systemjs-importmap" charset="utf-8"> </script>
 
   <script>
     System.import('./index.js').catch(function(err) { console.error(err); })
