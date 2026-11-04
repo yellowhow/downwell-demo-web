@@ -478,8 +478,8 @@ System.register("chunks:///_virtual/DebugOverlay.ts", ['./rollupPluginModLoBabel
   };
 });
 
-System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './DebugOverlay.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Gunboots.ts', './ChargeBar.ts', './HeartHud.ts', './GameOver.ts', './ScoreHud.ts', './PlayerHealth.ts'], function (exports) {
-  var _inheritsLoose, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, view, settings, Component, DebugOverlay, FixedStepDriver, getTuning, getTuningSource, BulletPool, Gunboots, ChargeBar, HeartHud, GameOver, ScoreHud, PlayerHealth;
+System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './DebugOverlay.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Gunboots.ts', './ChargeBar.ts', './HeartHud.ts', './GameOver.ts', './ScoreHud.ts', './HudFrame.ts', './PlayerHealth.ts'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, view, settings, Component, DebugOverlay, FixedStepDriver, getTuning, getTuningSource, BulletPool, Gunboots, ChargeBar, HeartHud, GameOver, ScoreHud, HudFrame, PlayerHealth;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -514,6 +514,8 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
     }, function (module) {
       ScoreHud = module.ScoreHud;
     }, function (module) {
+      HudFrame = module.HudFrame;
+    }, function (module) {
       PlayerHealth = module.PlayerHealth;
     }],
     execute: function () {
@@ -524,18 +526,11 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
       var DebugOverlayLoader = exports('DebugOverlayLoader', (_dec = ccclass('DebugOverlayLoader'), _dec(_class = /*#__PURE__*/function (_Component) {
         _inheritsLoose(DebugOverlayLoader, _Component);
         function DebugOverlayLoader() {
-          var _this;
-          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-            args[_key] = arguments[_key];
-          }
-          _this = _Component.call.apply(_Component, [this].concat(args)) || this;
-          _this._hudFrameGateCount = 0;
-          _this._hudFrameLoadStarted = false;
-          return _this;
+          return _Component.apply(this, arguments) || this;
         }
         var _proto = DebugOverlayLoader.prototype;
         _proto.onLoad = function onLoad() {
-          var _this2 = this;
+          var _this = this;
           this._ensureGameplayComponents();
           var canvas = find('Canvas');
           if (!canvas) {
@@ -566,16 +561,17 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
                 console.error('[DebugOverlayLoader] DebugOverlay component missing on instantiated prefab/DebugOverlay');
                 return;
               }
-              overlay.driver = _this2.getComponent(FixedStepDriver);
+              overlay.driver = _this.getComponent(FixedStepDriver);
               console.log('[DebugOverlayLoader] prefab instantiated');
               setTimeout(function () {
-                _this2._logSelfCheck(overlay);
+                _this._logSelfCheck(overlay);
               }, 3000);
-              _this2._loadTouchControls(canvas);
-              _this2._loadChargeBar(canvas);
-              _this2._loadHeartHud(canvas);
-              _this2._loadScoreHud(canvas);
-              _this2._loadGameOver(canvas);
+              _this._loadTouchControls(canvas);
+              _this._loadHudFrame(canvas);
+              _this._loadChargeBar(canvas);
+              _this._loadHeartHud(canvas);
+              _this._loadScoreHud(canvas);
+              _this._loadGameOver(canvas);
             });
           });
         };
@@ -593,7 +589,6 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
           }
         };
         _proto._loadChargeBar = function _loadChargeBar(canvas) {
-          var _this3 = this;
           assetManager.loadBundle('mainui', function (bundleErr, bundle) {
             if (bundleErr || !bundle) {
               console.error('[DebugOverlayLoader] loadBundle failed bundle=mainui for ChargeBar', bundleErr);
@@ -610,7 +605,6 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
               if (!node.getComponent(ChargeBar)) {
                 node.addComponent(ChargeBar);
               }
-              _this3._tryLoadHudFrameAfterHudWidgets(canvas);
             });
           });
         };
@@ -632,7 +626,6 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
           });
         };
         _proto._loadHeartHud = function _loadHeartHud(canvas) {
-          var _this4 = this;
           assetManager.loadBundle('mainui', function (bundleErr, bundle) {
             if (bundleErr || !bundle) {
               console.error('[DebugOverlayLoader] loadBundle failed bundle=mainui for HeartHud', bundleErr);
@@ -649,12 +642,10 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
               if (!node.getComponent(HeartHud)) {
                 node.addComponent(HeartHud);
               }
-              _this4._tryLoadHudFrameAfterHudWidgets(canvas);
             });
           });
         };
         _proto._loadScoreHud = function _loadScoreHud(canvas) {
-          var _this5 = this;
           assetManager.loadBundle('mainui', function (bundleErr, bundle) {
             if (bundleErr || !bundle) {
               console.error('[DebugOverlayLoader] loadBundle failed bundle=mainui for ScoreHud', bundleErr);
@@ -671,17 +662,8 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
               if (!node.getComponent(ScoreHud)) {
                 node.addComponent(ScoreHud);
               }
-              _this5._tryLoadHudFrameAfterHudWidgets(canvas);
             });
           });
-        };
-        _proto._tryLoadHudFrameAfterHudWidgets = function _tryLoadHudFrameAfterHudWidgets(canvas) {
-          this._hudFrameGateCount += 1;
-          if (this._hudFrameGateCount < 3 || this._hudFrameLoadStarted) {
-            return;
-          }
-          this._hudFrameLoadStarted = true;
-          this._loadHudFrame(canvas);
         };
         _proto._loadHudFrame = function _loadHudFrame(canvas) {
           assetManager.loadBundle('mainui', function (bundleErr, bundle) {
@@ -691,13 +673,17 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
             }
             bundle.load('prefab/HudFrame', Prefab, function (loadErr, prefab) {
               if (loadErr || !prefab) {
-                console.error('[DebugOverlayLoader] hud frame prefab load failed: prefab/HudFrame');
+                console.error('[DebugOverlayLoader] hud frame prefab load failed: prefab/HudFrame', loadErr);
                 return;
               }
               var node = instantiate(prefab);
               canvas.addChild(node);
               node.setPosition(0, 0);
               node.setSiblingIndex(1);
+              if (!node.getComponent(HudFrame)) {
+                node.addComponent(HudFrame);
+              }
+              console.log('[DebugOverlayLoader] HudFrame instantiated, children=' + node.children.length);
             });
           });
         };
@@ -2245,10 +2231,11 @@ System.register("chunks:///_virtual/HeartHud.ts", ['./rollupPluginModLoBabelHelp
 });
 
 System.register("chunks:///_virtual/HudFrame.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc'], function (exports) {
-  var _inheritsLoose, cclegacy, _decorator, find, Component;
+  var _inheritsLoose, _createForOfIteratorHelperLoose, cclegacy, _decorator, find, Component;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
+      _createForOfIteratorHelperLoose = module.createForOfIteratorHelperLoose;
     }, function (module) {
       cclegacy = module.cclegacy;
       _decorator = module._decorator;
@@ -2260,7 +2247,13 @@ System.register("chunks:///_virtual/HudFrame.ts", ['./rollupPluginModLoBabelHelp
       cclegacy._RF.push({}, "a1b2cPU5fZHiaASNFZ4q8AB", "HudFrame", undefined);
       var ccclass = _decorator.ccclass;
       var RETRY_INTERVAL_SEC = 0.1;
-      var MAX_RETRIES = 30;
+      var MAX_RETRIES = 40;
+      var PENDING_PATHS = {
+        HeartHud: 'Canvas/HeartHud',
+        ScoreHud: 'Canvas/ScoreHud',
+        ChargeBar: 'Canvas/ChargeBar',
+        DebugOverlay: 'Canvas/DebugOverlay'
+      };
       var HudFrame = exports('HudFrame', (_dec = ccclass('HudFrame'), _dec(_class = /*#__PURE__*/function (_Component) {
         _inheritsLoose(HudFrame, _Component);
         function HudFrame() {
@@ -2271,7 +2264,7 @@ System.register("chunks:///_virtual/HudFrame.ts", ['./rollupPluginModLoBabelHelp
           _this = _Component.call.apply(_Component, [this].concat(args)) || this;
           _this._retryCount = 0;
           _this._retryTimer = null;
-          _this._applied = false;
+          _this._pending = new Set(['HeartHud', 'ScoreHud', 'ChargeBar', 'DebugOverlay']);
           return _this;
         }
         var _proto = HudFrame.prototype;
@@ -2292,48 +2285,67 @@ System.register("chunks:///_virtual/HudFrame.ts", ['./rollupPluginModLoBabelHelp
           this._clearRetryTimer();
           this._tryApplyLayout();
         };
+        _proto._moveAndLog = function _moveAndLog(name, node, x, y) {
+          var before = node.getPosition();
+          node.setPosition(x, y);
+          console.log("[HudFrame] moved " + name + " y " + before.y + " -> " + y);
+        };
         _proto._tryApplyLayout = function _tryApplyLayout() {
           var _this2 = this;
-          if (this._applied) {
+          if (this._pending.size === 0) {
             return;
           }
-          var heartHud = find('Canvas/HeartHud');
-          var scoreHud = find('Canvas/ScoreHud');
-          var chargeBar = find('Canvas/ChargeBar');
-          var debugOverlay = find('Canvas/DebugOverlay');
-          if (!heartHud || !scoreHud || !chargeBar || !debugOverlay) {
-            this._retryCount += 1;
-            if (this._retryCount >= MAX_RETRIES) {
-              if (!heartHud) {
-                console.error('[HudFrame] HeartHud not found');
-              }
-              if (!scoreHud) {
-                console.error('[HudFrame] ScoreHud not found');
-              }
-              if (!chargeBar) {
-                console.error('[HudFrame] ChargeBar not found');
-              }
-              if (!debugOverlay) {
-                console.error('[HudFrame] DebugOverlay not found');
-              }
-              return;
+          if (this._pending.has('HeartHud')) {
+            var node = find(PENDING_PATHS.HeartHud);
+            if (node) {
+              this._moveAndLog('HeartHud', node, 0, 118);
+              this._pending["delete"]('HeartHud');
             }
-            this._retryTimer = setTimeout(function () {
-              return _this2._tryApplyLayout();
-            }, RETRY_INTERVAL_SEC * 1000);
+          }
+          if (this._pending.has('ScoreHud')) {
+            var _node = find(PENDING_PATHS.ScoreHud);
+            if (_node) {
+              this._moveAndLog('ScoreHud', _node, -46, 100);
+              this._pending["delete"]('ScoreHud');
+            }
+          }
+          if (this._pending.has('ChargeBar')) {
+            var _node2 = find(PENDING_PATHS.ChargeBar);
+            if (_node2) {
+              this._moveAndLog('ChargeBar', _node2, 0, -70);
+              this._pending["delete"]('ChargeBar');
+            }
+          }
+          if (this._pending.has('DebugOverlay')) {
+            var _node3 = find(PENDING_PATHS.DebugOverlay);
+            if (_node3) {
+              var before = _node3.getPosition();
+              _node3.setPosition(before.x, 90);
+              console.log("[HudFrame] moved DebugOverlay y " + before.y + " -> 90");
+              this._pending["delete"]('DebugOverlay');
+            }
+          }
+          if (this._pending.size === 0) {
+            this._clearRetryTimer();
+            var debugOverlay = find(PENDING_PATHS.DebugOverlay);
+            var canvas = find('Canvas');
+            if (debugOverlay && canvas) {
+              debugOverlay.setSiblingIndex(canvas.children.length - 1);
+            }
             return;
           }
-          this._applied = true;
-          this._clearRetryTimer();
-          heartHud.setPosition(0, 118);
-          scoreHud.setPosition(-46, 100);
-          chargeBar.setPosition(0, -70);
-          var debugPos = debugOverlay.getPosition();
-          debugOverlay.setPosition(debugPos.x, 90);
-          var parent = debugOverlay.parent;
-          if (parent) {
-            debugOverlay.setSiblingIndex(parent.children.length - 1);
+          this._retryCount += 1;
+          if (this._retryCount >= MAX_RETRIES) {
+            for (var _iterator = _createForOfIteratorHelperLoose(this._pending), _step; !(_step = _iterator()).done;) {
+              var key = _step.value;
+              console.error("[HudFrame] " + key + " not found after " + MAX_RETRIES + " retries");
+            }
+            this._clearRetryTimer();
+            return;
           }
+          this._retryTimer = setTimeout(function () {
+            return _this2._tryApplyLayout();
+          }, RETRY_INTERVAL_SEC * 1000);
         };
         return HudFrame;
       }(Component)) || _class));
