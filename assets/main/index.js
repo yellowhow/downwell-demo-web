@@ -478,8 +478,8 @@ System.register("chunks:///_virtual/DebugOverlay.ts", ['./rollupPluginModLoBabel
   };
 });
 
-System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './DebugOverlay.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Gunboots.ts', './ChargeBar.ts', './HeartHud.ts', './GameOver.ts', './PlayerHealth.ts'], function (exports) {
-  var _inheritsLoose, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, view, settings, Component, DebugOverlay, FixedStepDriver, getTuning, getTuningSource, BulletPool, Gunboots, ChargeBar, HeartHud, GameOver, PlayerHealth;
+System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './DebugOverlay.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Gunboots.ts', './ChargeBar.ts', './HeartHud.ts', './GameOver.ts', './ScoreHud.ts', './PlayerHealth.ts'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, view, settings, Component, DebugOverlay, FixedStepDriver, getTuning, getTuningSource, BulletPool, Gunboots, ChargeBar, HeartHud, GameOver, ScoreHud, PlayerHealth;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -511,6 +511,8 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
       HeartHud = module.HeartHud;
     }, function (module) {
       GameOver = module.GameOver;
+    }, function (module) {
+      ScoreHud = module.ScoreHud;
     }, function (module) {
       PlayerHealth = module.PlayerHealth;
     }],
@@ -565,6 +567,7 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
               _this._loadTouchControls(canvas);
               _this._loadChargeBar(canvas);
               _this._loadHeartHud(canvas);
+              _this._loadScoreHud(canvas);
               _this._loadGameOver(canvas);
             });
           });
@@ -635,6 +638,26 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
               node.setPosition(0, 86);
               if (!node.getComponent(HeartHud)) {
                 node.addComponent(HeartHud);
+              }
+            });
+          });
+        };
+        _proto._loadScoreHud = function _loadScoreHud(canvas) {
+          assetManager.loadBundle('mainui', function (bundleErr, bundle) {
+            if (bundleErr || !bundle) {
+              console.error('[DebugOverlayLoader] loadBundle failed bundle=mainui for ScoreHud', bundleErr);
+              return;
+            }
+            bundle.load('prefab/ScoreHud', Prefab, function (loadErr, prefab) {
+              if (loadErr || !prefab) {
+                console.error('[DebugOverlayLoader] score hud prefab load failed: prefab/ScoreHud');
+                return;
+              }
+              var node = instantiate(prefab);
+              canvas.addChild(node);
+              node.setPosition(-46, 66);
+              if (!node.getComponent(ScoreHud)) {
+                node.addComponent(ScoreHud);
               }
             });
           });
@@ -923,8 +946,8 @@ System.register("chunks:///_virtual/Enemy.ts", ['./rollupPluginModLoBabelHelpers
   };
 });
 
-System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Enemy.ts', './LevelData.ts', './PlayerHealth.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, FixedStepDriver, getTuning, BulletPool, Enemy, PLATFORM_SPECS, platformTopY, LEVEL_ROWS, LEVEL_COLS, LEVEL_GRID, PlayerHealth;
+System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Enemy.ts', './GemManager.ts', './LevelData.ts', './PlayerController.ts', './PlayerHealth.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, FixedStepDriver, getTuning, BulletPool, Enemy, GemManager, PLATFORM_SPECS, platformTopY, LEVEL_ROWS, LEVEL_COLS, LEVEL_GRID, PlayerController, PlayerHealth;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -947,11 +970,15 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
     }, function (module) {
       Enemy = module.Enemy;
     }, function (module) {
+      GemManager = module.GemManager;
+    }, function (module) {
       PLATFORM_SPECS = module.PLATFORM_SPECS;
       platformTopY = module.platformTopY;
       LEVEL_ROWS = module.LEVEL_ROWS;
       LEVEL_COLS = module.LEVEL_COLS;
       LEVEL_GRID = module.LEVEL_GRID;
+    }, function (module) {
+      PlayerController = module.PlayerController;
     }, function (module) {
       PlayerHealth = module.PlayerHealth;
     }],
@@ -997,6 +1024,8 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
           _this._stepBound = false;
           _this._bulletPool = null;
           _this._playerHealth = null;
+          _this._gemManager = null;
+          _this._gemManagerWarned = false;
           return _this;
         }
         var _proto = EnemyManager.prototype;
@@ -1032,6 +1061,11 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
             });
           });
           this._bindStep();
+          this._gemManager = this.node.getComponent(GemManager);
+          if (!this._gemManager) {
+            console.error('[EnemyManager] GemManager not found on Game');
+            this._gemManagerWarned = true;
+          }
           if (typeof window !== 'undefined') {
             window.__dwEnemies = this;
             window.__dwEnemyList = this._active;
@@ -1096,6 +1130,7 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
           return enemy;
         };
         _proto._step = function _step() {
+          var _playerCtrl$velocity$;
           var tileSize = getTuning().level.tileSize;
           var isSolidAt = function isSolidAt(col, row) {
             if (row < 0 || row >= LEVEL_ROWS || col < 0 || col >= LEVEL_COLS) {
@@ -1144,7 +1179,7 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
               if (Math.abs(ex - bx) < ehw + bhw && Math.abs(ey - by) < ehh + bhh) {
                 pool.recycle(bullet);
                 if (_enemy.damage(1)) {
-                  this._recycle(_enemy);
+                  this._dropGemAndRecycle(_enemy);
                 }
                 break;
               }
@@ -1167,25 +1202,66 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
           var phh = player.bodyHeight / 2;
           var px = playerNode.position.x;
           var py = playerNode.position.y;
-          for (var _ei = 0; _ei < this._active.length; _ei += 1) {
-            var _enemy2 = this._active[_ei];
-            if (!_enemy2.alive) {
-              continue;
-            }
-            var _eut = _enemy2.getComponent(UITransform);
-            if (!_eut) {
-              continue;
-            }
-            var _ehw = _eut.width / 2;
-            var _ehh = _eut.height / 2;
-            var _ex = _enemy2.node.position.x;
-            var _ey = _enemy2.node.position.y;
-            if (Math.abs(_ex - px) < _ehw + phw && Math.abs(_ey - py) < _ehh + phh) {
-              if (playerHealth.takeDamage(1, _ex)) {
+          var playerCtrl = playerNode.getComponent(PlayerController);
+          var pVy = (_playerCtrl$velocity$ = playerCtrl == null ? void 0 : playerCtrl.velocity.y) != null ? _playerCtrl$velocity$ : 0;
+          var stomp = getTuning().stomp;
+          var playerFootY = py - phh;
+          if (playerCtrl && pVy < 0) {
+            for (var _ei = 0; _ei < this._active.length; _ei += 1) {
+              var _enemy2 = this._active[_ei];
+              if (!_enemy2.alive) {
+                continue;
+              }
+              var _eut = _enemy2.getComponent(UITransform);
+              if (!_eut) {
+                continue;
+              }
+              var _ehw = _eut.width / 2;
+              var _ehh = _eut.height / 2;
+              var _ex = _enemy2.node.position.x;
+              var _ey = _enemy2.node.position.y;
+              if (Math.abs(_ex - px) < _ehw + phw && Math.abs(_ey - py) < _ehh + phh && playerFootY - _ey > stomp.toleranceY) {
+                if (_enemy2.damage(999)) {
+                  this._dropGemAndRecycle(_enemy2);
+                }
+                playerCtrl.bounceFromStomp();
                 break;
               }
             }
           }
+          for (var _ei2 = 0; _ei2 < this._active.length; _ei2 += 1) {
+            var _enemy3 = this._active[_ei2];
+            if (!_enemy3.alive) {
+              continue;
+            }
+            var _eut2 = _enemy3.getComponent(UITransform);
+            if (!_eut2) {
+              continue;
+            }
+            var _ehw2 = _eut2.width / 2;
+            var _ehh2 = _eut2.height / 2;
+            var _ex2 = _enemy3.node.position.x;
+            var _ey2 = _enemy3.node.position.y;
+            if (Math.abs(_ex2 - px) < _ehw2 + phw && Math.abs(_ey2 - py) < _ehh2 + phh) {
+              if (playerHealth.takeDamage(1, _ex2)) {
+                break;
+              }
+            }
+          }
+        };
+        _proto._dropGemAndRecycle = function _dropGemAndRecycle(enemy) {
+          if (!this._gemManager && !this._gemManagerWarned) {
+            this._gemManager = this.node.getComponent(GemManager);
+            if (!this._gemManager) {
+              console.error('[EnemyManager] GemManager not found on Game');
+              this._gemManagerWarned = true;
+            }
+          }
+          if (this._gemManager) {
+            var kind = enemy.kind === 'snail' ? 'medium' : 'small';
+            this._gemManager.spawnAt(kind, enemy.node.position.x, enemy.node.position.y);
+          }
+          this._recycle(enemy);
         };
         _proto._recycle = function _recycle(e) {
           var idx = this._active.indexOf(e);
@@ -1474,6 +1550,394 @@ System.register("chunks:///_virtual/GameOver.ts", ['./rollupPluginModLoBabelHelp
   };
 });
 
+System.register("chunks:///_virtual/Gem.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './TuningConfig.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, UITransform, Sprite, Color, assetManager, SpriteFrame, Component, getTuning;
+  return {
+    setters: [function (module) {
+      _inheritsLoose = module.inheritsLoose;
+      _createClass = module.createClass;
+    }, function (module) {
+      cclegacy = module.cclegacy;
+      _decorator = module._decorator;
+      UITransform = module.UITransform;
+      Sprite = module.Sprite;
+      Color = module.Color;
+      assetManager = module.assetManager;
+      SpriteFrame = module.SpriteFrame;
+      Component = module.Component;
+    }, function (module) {
+      getTuning = module.getTuning;
+    }],
+    execute: function () {
+      var _dec, _class;
+      cclegacy._RF.push({}, "078f85qJYxL4LmYfklugG85", "Gem", undefined);
+      var ccclass = _decorator.ccclass;
+      var Gem = exports('Gem', (_dec = ccclass('Gem'), _dec(_class = /*#__PURE__*/function (_Component) {
+        _inheritsLoose(Gem, _Component);
+        function Gem() {
+          var _this;
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+          _this = _Component.call.apply(_Component, [this].concat(args)) || this;
+          _this._kind = 'small';
+          _this._vx = 0;
+          _this._vy = 0;
+          _this._life = 0;
+          _this._bounces = 0;
+          _this._animStep = 0;
+          _this._sprite = null;
+          _this._frames = [null, null, null, null];
+          _this._framesLoaded = false;
+          _this._framesLoading = false;
+          _this._inBlinkZone = false;
+          _this._lastBlinkPhase = -1;
+          return _this;
+        }
+        var _proto = Gem.prototype;
+        _proto.init = function init(kind, x, y) {
+          var tuning = getTuning().gems;
+          this._kind = kind;
+          this._vx = (Math.random() - 0.5) * 0.8;
+          this._vy = tuning.popUpSpeed;
+          this._life = tuning.lifeSteps;
+          this._bounces = 0;
+          this._animStep = 0;
+          this._inBlinkZone = false;
+          this._lastBlinkPhase = -1;
+          this.node.setPosition(x, y);
+          this.node.active = true;
+          var ut = this.getComponent(UITransform);
+          if (ut) {
+            var size = kind === 'small' ? 16 : 24;
+            ut.setContentSize(size, size);
+          }
+          if (!this._sprite) {
+            this._sprite = this.getComponent(Sprite);
+          }
+          if (this._sprite) {
+            this._sprite.color = new Color(255, 255, 255, 255);
+            this._sprite.enabled = true;
+          }
+          this._ensureFramesLoaded();
+        };
+        _proto.step = function step(tileSize, isSolidAt) {
+          this._life -= 1;
+          if (this._life <= 0) {
+            return true;
+          }
+          this._updateBlink();
+          var tuning = getTuning().gems;
+          this._vy -= tuning.gravity;
+          var x = this.node.position.x;
+          var y = this.node.position.y;
+          var ut = this.getComponent(UITransform);
+          var halfH = ut ? ut.height / 2 : 8;
+          var halfW = ut ? ut.width / 2 : 8;
+          var nextY = y + this._vy;
+          var colY = Math.floor(x / tileSize);
+          var rowY = Math.floor(-nextY / tileSize);
+          if (this._vy < 0 && isSolidAt(colY, rowY)) {
+            var tileTop = -rowY * tileSize;
+            y = tileTop + halfH;
+            this._vy = -this._vy * tuning.bounceFactor;
+            this._bounces += 1;
+            if (this._bounces > tuning.maxBounces || Math.abs(this._vy) < 0.4) {
+              this._vy = 0;
+            }
+          } else {
+            y = nextY;
+          }
+          var nextX = x + this._vx;
+          var rowX = Math.floor(-y / tileSize);
+          var probeCol = this._vx > 0 ? Math.floor((nextX + halfW) / tileSize) : Math.floor((nextX - halfW) / tileSize);
+          if (this._vx !== 0 && isSolidAt(probeCol, rowX)) {
+            this._vx = -this._vx * 0.5;
+          } else {
+            x = nextX;
+          }
+          this.node.setPosition(x, y);
+          this._animStep += 1;
+          if (this._animStep % 8 === 0 && this._framesLoaded && this._sprite) {
+            var frameIndex = Math.floor(this._animStep / 8) % 4;
+            var frame = this._frames[frameIndex];
+            if (frame) {
+              this._sprite.spriteFrame = frame;
+            }
+          }
+          return false;
+        };
+        _proto._updateBlink = function _updateBlink() {
+          var blinkSteps = getTuning().gems.blinkSteps;
+          var inBlink = this._life <= blinkSteps;
+          if (!inBlink) {
+            if (this._inBlinkZone && this._sprite) {
+              this._sprite.enabled = true;
+            }
+            this._inBlinkZone = false;
+            this._lastBlinkPhase = -1;
+            return;
+          }
+          var phase = Math.floor(this._life / 6) % 2;
+          if (!this._inBlinkZone || phase !== this._lastBlinkPhase) {
+            if (this._sprite) {
+              this._sprite.enabled = phase === 0;
+            }
+            this._lastBlinkPhase = phase;
+          }
+          this._inBlinkZone = true;
+        };
+        _proto._ensureFramesLoaded = function _ensureFramesLoaded() {
+          var _this2 = this;
+          if (this._framesLoaded || this._framesLoading) {
+            return;
+          }
+          this._framesLoading = true;
+          var prefix = this._kind === 'small' ? 'sprite/gem/gem_s_' : 'sprite/gem/gem_m_';
+          assetManager.loadBundle('mainui', function (bundleErr, bundle) {
+            if (bundleErr || !bundle) {
+              console.error('[Gem] sprite load failed kind=' + _this2._kind);
+              _this2._framesLoading = false;
+              return;
+            }
+            var pending = 4;
+            var _loop = function _loop(i) {
+              var path = "" + prefix + String(i).padStart(2, '0') + "/spriteFrame";
+              bundle.load(path, SpriteFrame, function (loadErr, frame) {
+                if (loadErr || !frame) {
+                  console.error('[Gem] sprite load failed kind=' + _this2._kind + ' path=' + path);
+                } else {
+                  _this2._frames[i] = frame;
+                }
+                pending -= 1;
+                if (pending === 0) {
+                  _this2._framesLoaded = _this2._frames.every(function (f) {
+                    return f !== null;
+                  });
+                  _this2._framesLoading = false;
+                  if (_this2._framesLoaded && _this2._frames[0] && _this2._sprite) {
+                    _this2._sprite.spriteFrame = _this2._frames[0];
+                  }
+                }
+              });
+            };
+            for (var i = 0; i < 4; i += 1) {
+              _loop(i);
+            }
+          });
+        };
+        _createClass(Gem, [{
+          key: "score",
+          get: function get() {
+            var g = getTuning().gems;
+            return this._kind === 'small' ? g.smallScore : g.mediumScore;
+          }
+        }]);
+        return Gem;
+      }(Component)) || _class));
+      cclegacy._RF.pop();
+    }
+  };
+});
+
+System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './TuningConfig.ts', './LevelData.ts', './Gem.ts', './Gunboots.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, FixedStepDriver, getTuning, LEVEL_ROWS, LEVEL_COLS, LEVEL_GRID, Gem, Gunboots;
+  return {
+    setters: [function (module) {
+      _inheritsLoose = module.inheritsLoose;
+      _createClass = module.createClass;
+    }, function (module) {
+      cclegacy = module.cclegacy;
+      _decorator = module._decorator;
+      find = module.find;
+      assetManager = module.assetManager;
+      Prefab = module.Prefab;
+      instantiate = module.instantiate;
+      UITransform = module.UITransform;
+      Component = module.Component;
+    }, function (module) {
+      FixedStepDriver = module.FixedStepDriver;
+    }, function (module) {
+      getTuning = module.getTuning;
+    }, function (module) {
+      LEVEL_ROWS = module.LEVEL_ROWS;
+      LEVEL_COLS = module.LEVEL_COLS;
+      LEVEL_GRID = module.LEVEL_GRID;
+    }, function (module) {
+      Gem = module.Gem;
+    }, function (module) {
+      Gunboots = module.Gunboots;
+    }],
+    execute: function () {
+      var _dec, _class;
+      cclegacy._RF.push({}, "4be01m1ZlpKE7sUn+X0N7nO", "GemManager", undefined);
+      var ccclass = _decorator.ccclass;
+      var GEM_POOL_SIZE = 24;
+      var GemManager = exports('GemManager', (_dec = ccclass('GemManager'), _dec(_class = /*#__PURE__*/function (_Component) {
+        _inheritsLoose(GemManager, _Component);
+        function GemManager() {
+          var _this;
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+          _this = _Component.call.apply(_Component, [this].concat(args)) || this;
+          _this._world = null;
+          _this._free = [];
+          _this._active = [];
+          _this._poolReady = false;
+          _this._stepBound = false;
+          _this._score = 0;
+          _this._gunboots = null;
+          return _this;
+        }
+        var _proto = GemManager.prototype;
+        _proto.resetScore = function resetScore() {
+          this._score = 0;
+        };
+        _proto.onLoad = function onLoad() {
+          var _this2 = this;
+          this._world = find('World');
+          if (!this._world) {
+            console.error('[GemManager] World node not found');
+            return;
+          }
+          assetManager.loadBundle('mainui', function (bundleErr, bundle) {
+            if (bundleErr || !bundle) {
+              console.error('[GemManager] loadBundle failed bundle=mainui', bundleErr);
+              return;
+            }
+            bundle.load('prefab/Gem', Prefab, function (loadErr, prefab) {
+              if (loadErr || !prefab) {
+                console.error('[GemManager] prefab/Gem load failed');
+                return;
+              }
+              for (var i = 0; i < GEM_POOL_SIZE; i += 1) {
+                var node = instantiate(prefab);
+                _this2._world.addChild(node);
+                var gem = node.getComponent(Gem);
+                if (!gem) {
+                  gem = node.addComponent(Gem);
+                }
+                node.active = false;
+                _this2._free.push(gem);
+              }
+              _this2._poolReady = true;
+            });
+          });
+          this._bindStep();
+          if (typeof window !== 'undefined') {
+            window.__dwGems = this;
+            window.__dwGemList = this._active;
+          }
+        };
+        _proto.spawnAt = function spawnAt(kind, x, y) {
+          if (!this._poolReady) {
+            return null;
+          }
+          var gem = this._free.pop();
+          if (!gem && this._active.length > 0) {
+            gem = this._active.shift();
+            gem.node.active = false;
+          }
+          if (!gem) {
+            console.warn('[GemManager] gem pool empty');
+            return null;
+          }
+          gem.init(kind, x, y);
+          this._active.push(gem);
+          return gem;
+        };
+        _proto._bindStep = function _bindStep() {
+          var _this3 = this;
+          if (this._stepBound) {
+            return;
+          }
+          var gameNode = find('Game');
+          var driver = gameNode ? gameNode.getComponent(FixedStepDriver) : null;
+          if (!driver) {
+            console.error('[GemManager] FixedStepDriver not found on Game');
+            return;
+          }
+          driver.registerOnStep(function () {
+            if (_this3.enabled && _this3.node.activeInHierarchy) {
+              _this3._step();
+            }
+          });
+          this._stepBound = true;
+        };
+        _proto._step = function _step() {
+          var tileSize = getTuning().level.tileSize;
+          var isSolidAt = function isSolidAt(col, row) {
+            if (row < 0 || row >= LEVEL_ROWS || col < 0 || col >= LEVEL_COLS) {
+              return true;
+            }
+            return LEVEL_GRID[row][col] === 1;
+          };
+          for (var i = this._active.length - 1; i >= 0; i -= 1) {
+            var gem = this._active[i];
+            if (gem.step(tileSize, isSolidAt)) {
+              this._recycle(gem);
+            }
+          }
+          var playerNode = find('World/Player');
+          if (!playerNode) {
+            return;
+          }
+          var put = playerNode.getComponent(UITransform);
+          if (!put) {
+            return;
+          }
+          var phw = put.width / 2;
+          var phh = put.height / 2;
+          var px = playerNode.position.x;
+          var py = playerNode.position.y;
+          if (!this._gunboots) {
+            var _playerNode$getCompon;
+            this._gunboots = (_playerNode$getCompon = playerNode.getComponent(Gunboots)) != null ? _playerNode$getCompon : null;
+          }
+          var chargePerGem = getTuning().gems.chargePerGem;
+          for (var _i = this._active.length - 1; _i >= 0; _i -= 1) {
+            var _gem = this._active[_i];
+            if (!_gem.node.active) {
+              continue;
+            }
+            var gut = _gem.getComponent(UITransform);
+            if (!gut) {
+              continue;
+            }
+            var ghw = gut.width / 2;
+            var ghh = gut.height / 2;
+            var gx = _gem.node.position.x;
+            var gy = _gem.node.position.y;
+            if (Math.abs(gx - px) < ghw + phw && Math.abs(gy - py) < ghh + phh) {
+              var _this$_gunboots;
+              this._score += _gem.score;
+              (_this$_gunboots = this._gunboots) == null || _this$_gunboots.addCharge(chargePerGem);
+              this._recycle(_gem);
+            }
+          }
+        };
+        _proto._recycle = function _recycle(gem) {
+          var idx = this._active.indexOf(gem);
+          if (idx >= 0) {
+            this._active.splice(idx, 1);
+          }
+          gem.node.active = false;
+          this._free.push(gem);
+        };
+        _createClass(GemManager, [{
+          key: "score",
+          get: function get() {
+            return this._score;
+          }
+        }]);
+        return GemManager;
+      }(Component)) || _class));
+      cclegacy._RF.pop();
+    }
+  };
+});
+
 System.register("chunks:///_virtual/Gunboots.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './InputState.ts', './TuningConfig.ts', './BulletPool.ts', './PlayerController.ts'], function (exports) {
   var _inheritsLoose, _createClass, cclegacy, _decorator, find, Component, FixedStepDriver, inputState, getTuning, initTuning, BulletPool, PlayerController;
   return {
@@ -1513,6 +1977,7 @@ System.register("chunks:///_virtual/Gunboots.ts", ['./rollupPluginModLoBabelHelp
           _this._cooldown = 0;
           _this._stepsSinceLastShot = 0;
           _this._rechargeStepAcc = 0;
+          _this._wasGrounded = true;
           _this._stepBound = false;
           _this._player = null;
           _this._pool = null;
@@ -1528,6 +1993,8 @@ System.register("chunks:///_virtual/Gunboots.ts", ['./rollupPluginModLoBabelHelp
           this._player = this.getComponent(PlayerController);
           if (!this._player) {
             console.error('[Gunboots] PlayerController missing on same node');
+          } else {
+            this._wasGrounded = this._player.onGround;
           }
           this._bindStep();
           if (typeof window !== 'undefined') {
@@ -1561,6 +2028,13 @@ System.register("chunks:///_virtual/Gunboots.ts", ['./rollupPluginModLoBabelHelp
           var tuning = getTuning();
           var g = tuning.gunboots;
           var grounded = this._player ? this._player.onGround : false;
+          if (grounded && !this._wasGrounded) {
+            this._charge = g.chargeMax;
+            this._rechargeStepAcc = 0;
+            this._stepsSinceLastShot = g.rechargeDelaySteps;
+          }
+          this._wasGrounded = grounded;
+
           /** 只有离地才能开火（用户拍板） */
           var fireAllowed = inputState.fireHeld && !grounded;
           if (this._player) {
@@ -1595,6 +2069,13 @@ System.register("chunks:///_virtual/Gunboots.ts", ['./rollupPluginModLoBabelHelp
           var halfH = getTuning().player.bodyHeight / 2;
           var spawnY = pos.y - halfH;
           this._pool.spawn(pos.x, spawnY, 0, -g.bulletSpeed, g.bulletLifeSteps);
+        }
+
+        /** 宝石入账：DW-09 的 scrRechargeGem → gainCharge 链路 */;
+        _proto.addCharge = function addCharge(n) {
+          var g = getTuning().gunboots;
+          this._charge = Math.min(g.chargeMax, this._charge + n);
+          this._stepsSinceLastShot = 0;
         };
         _createClass(Gunboots, [{
           key: "charge",
@@ -2168,9 +2649,9 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
   };
 });
 
-System.register("chunks:///_virtual/main", ['./FixedStepDriver.ts', './InputState.ts', './KeyboardInput.ts', './TuningConfig.ts', './ViewBootstrap.ts', './stepAccumulator.ts', './Bullet.ts', './BulletPool.ts', './Enemy.ts', './EnemyManager.ts', './Gunboots.ts', './LevelData.ts', './LevelView.ts', './PlayerController.ts', './PlayerHealth.ts', './WorldScroll.ts', './ChargeBar.ts', './DebugOverlay.ts', './DebugOverlayLoader.ts', './GameOver.ts', './HeartHud.ts', './TouchControls.ts', './TouchPad.ts'], function () {
+System.register("chunks:///_virtual/main", ['./FixedStepDriver.ts', './InputState.ts', './KeyboardInput.ts', './TuningConfig.ts', './ViewBootstrap.ts', './stepAccumulator.ts', './Bullet.ts', './BulletPool.ts', './Enemy.ts', './EnemyManager.ts', './Gem.ts', './GemManager.ts', './Gunboots.ts', './LevelData.ts', './LevelView.ts', './PlayerController.ts', './PlayerHealth.ts', './WorldScroll.ts', './ChargeBar.ts', './DebugOverlay.ts', './DebugOverlayLoader.ts', './GameOver.ts', './HeartHud.ts', './ScoreHud.ts', './TouchControls.ts', './TouchPad.ts'], function () {
   return {
-    setters: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+    setters: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
     execute: function () {}
   };
 });
@@ -2483,6 +2964,12 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           }
           var player = getTuning().player;
           ut.setContentSize(player.bodyWidth, player.bodyHeight);
+        }
+
+        /** 踩踏弹起：DW-03 的 scrEnemyStomped 之后的回弹 */;
+        _proto.bounceFromStomp = function bounceFromStomp() {
+          this._vy = getTuning().stomp.bounceVy;
+          this._onGround = false;
         };
         _createClass(PlayerController, [{
           key: "_leftHeld",
@@ -2676,6 +3163,59 @@ System.register("chunks:///_virtual/PlayerHealth.ts", ['./rollupPluginModLoBabel
           }
         }]);
         return PlayerHealth;
+      }(Component)) || _class));
+      cclegacy._RF.pop();
+    }
+  };
+});
+
+System.register("chunks:///_virtual/ScoreHud.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './GemManager.ts'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, Label, find, Component, GemManager;
+  return {
+    setters: [function (module) {
+      _inheritsLoose = module.inheritsLoose;
+    }, function (module) {
+      cclegacy = module.cclegacy;
+      _decorator = module._decorator;
+      Label = module.Label;
+      find = module.find;
+      Component = module.Component;
+    }, function (module) {
+      GemManager = module.GemManager;
+    }],
+    execute: function () {
+      var _dec, _class;
+      cclegacy._RF.push({}, "e8b72LmGFpJk6RT8CNHkC3C", "ScoreHud", undefined);
+      var ccclass = _decorator.ccclass;
+      var ScoreHud = exports('ScoreHud', (_dec = ccclass('ScoreHud'), _dec(_class = /*#__PURE__*/function (_Component) {
+        _inheritsLoose(ScoreHud, _Component);
+        function ScoreHud() {
+          var _this;
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+          _this = _Component.call.apply(_Component, [this].concat(args)) || this;
+          _this._label = null;
+          _this._lastScore = -1;
+          return _this;
+        }
+        var _proto = ScoreHud.prototype;
+        _proto.onLoad = function onLoad() {
+          this._label = this.getComponent(Label);
+          if (typeof window !== 'undefined') {
+            window.__dwScoreHud = this;
+          }
+        };
+        _proto.update = function update() {
+          var _find$getComponent$sc, _find;
+          var score = (_find$getComponent$sc = (_find = find('Game')) == null || (_find = _find.getComponent(GemManager)) == null ? void 0 : _find.score) != null ? _find$getComponent$sc : 0;
+          if (score === this._lastScore || !this._label) {
+            return;
+          }
+          this._lastScore = score;
+          this._label.string = "GEMS " + score;
+        };
+        return ScoreHud;
       }(Component)) || _class));
       cclegacy._RF.pop();
     }
@@ -3122,6 +3662,21 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
           knockbackVx: 1.6,
           knockbackVy: 2.2,
           deathRestartDelaySteps: 30
+        },
+        gems: {
+          smallScore: 1,
+          mediumScore: 3,
+          gravity: 0.3,
+          popUpSpeed: 2.2,
+          bounceFactor: 0.45,
+          maxBounces: 2,
+          lifeSteps: 180,
+          blinkSteps: 60,
+          chargePerGem: 1
+        },
+        stomp: {
+          bounceVy: 3.2,
+          toleranceY: 6
         }
       };
       var current = cloneTuning(DEFAULT_TUNING);
@@ -3189,6 +3744,21 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
             knockbackVx: tuning.health.knockbackVx,
             knockbackVy: tuning.health.knockbackVy,
             deathRestartDelaySteps: tuning.health.deathRestartDelaySteps
+          },
+          gems: {
+            smallScore: tuning.gems.smallScore,
+            mediumScore: tuning.gems.mediumScore,
+            gravity: tuning.gems.gravity,
+            popUpSpeed: tuning.gems.popUpSpeed,
+            bounceFactor: tuning.gems.bounceFactor,
+            maxBounces: tuning.gems.maxBounces,
+            lifeSteps: tuning.gems.lifeSteps,
+            blinkSteps: tuning.gems.blinkSteps,
+            chargePerGem: tuning.gems.chargePerGem
+          },
+          stomp: {
+            bounceVy: tuning.stomp.bounceVy,
+            toleranceY: tuning.stomp.toleranceY
           }
         };
       }
@@ -3291,6 +3861,8 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
           throw new Error('missing gunboots');
         }
         var healthRaw = isRecord(raw.health) ? raw.health : null;
+        var gemsRaw = isRecord(raw.gems) ? raw.gems : null;
+        var stompRaw = isRecord(raw.stomp) ? raw.stomp : null;
         return {
           loop: {
             fixedStepHz: readNumberValue(raw.loop.fixedStepHz, 'loop.fixedStepHz'),
@@ -3338,6 +3910,21 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
             knockbackVx: healthRaw ? readNumberValue(healthRaw.knockbackVx, 'health.knockbackVx') : DEFAULT_TUNING.health.knockbackVx,
             knockbackVy: healthRaw ? readNumberValue(healthRaw.knockbackVy, 'health.knockbackVy') : DEFAULT_TUNING.health.knockbackVy,
             deathRestartDelaySteps: healthRaw ? readNumberValue(healthRaw.deathRestartDelaySteps, 'health.deathRestartDelaySteps') : DEFAULT_TUNING.health.deathRestartDelaySteps
+          },
+          gems: {
+            smallScore: gemsRaw ? readNumberValue(gemsRaw.smallScore, 'gems.smallScore') : DEFAULT_TUNING.gems.smallScore,
+            mediumScore: gemsRaw ? readNumberValue(gemsRaw.mediumScore, 'gems.mediumScore') : DEFAULT_TUNING.gems.mediumScore,
+            gravity: gemsRaw ? readNumberValue(gemsRaw.gravity, 'gems.gravity') : DEFAULT_TUNING.gems.gravity,
+            popUpSpeed: gemsRaw ? readNumberValue(gemsRaw.popUpSpeed, 'gems.popUpSpeed') : DEFAULT_TUNING.gems.popUpSpeed,
+            bounceFactor: gemsRaw ? readNumberValue(gemsRaw.bounceFactor, 'gems.bounceFactor') : DEFAULT_TUNING.gems.bounceFactor,
+            maxBounces: gemsRaw ? readNumberValue(gemsRaw.maxBounces, 'gems.maxBounces') : DEFAULT_TUNING.gems.maxBounces,
+            lifeSteps: gemsRaw ? readNumberValue(gemsRaw.lifeSteps, 'gems.lifeSteps') : DEFAULT_TUNING.gems.lifeSteps,
+            blinkSteps: gemsRaw ? readNumberValue(gemsRaw.blinkSteps, 'gems.blinkSteps') : DEFAULT_TUNING.gems.blinkSteps,
+            chargePerGem: gemsRaw ? readNumberValue(gemsRaw.chargePerGem, 'gems.chargePerGem') : DEFAULT_TUNING.gems.chargePerGem
+          },
+          stomp: {
+            bounceVy: stompRaw ? readNumberValue(stompRaw.bounceVy, 'stomp.bounceVy') : DEFAULT_TUNING.stomp.bounceVy,
+            toleranceY: stompRaw ? readNumberValue(stompRaw.toleranceY, 'stomp.toleranceY') : DEFAULT_TUNING.stomp.toleranceY
           }
         };
       }

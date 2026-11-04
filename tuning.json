@@ -1,5 +1,5 @@
 {
-  "meta": { "version": "0.4.0", "date": "2026-11-04" },
+  "meta": { "version": "0.5.0", "date": "2026-11-04" },
   "loop": {
     "fixedStepHz":   { "value": 60, "version": "0.1.0", "date": "2026-11-04", "why": "DW-01 实录：18 个房间 speed 全为 60" },
     "maxCatchUpSteps": { "value": 5, "version": "0.1.0", "date": "2026-11-04", "why": "防后台切回时补步雪崩" }
@@ -46,5 +46,20 @@
     "knockbackVx":        { "value": 1.6, "version": "0.4.0", "date": "2026-11-04", "why": "受击横向击退，约 1.3 倍移动速度，够看出被弹开" },
     "knockbackVy":        { "value": 2.2, "version": "0.4.0", "date": "2026-11-04", "why": "受击向上弹起量，小于跳跃初速 5.99 的一半，不会被弹飞" },
     "deathRestartDelaySteps": { "value": 30, "version": "0.4.0", "date": "2026-11-04", "why": "死亡面板出现后 0.5s 内忽略点击，防手滑瞬间重开" }
+  },
+  "gems": {
+    "smallScore":  { "value": 1,   "version": "0.5.0", "date": "2026-11-04", "why": "小宝石面额，DW-09 单货币体系：宝石＝分数＝货币，不设第二种资源" },
+    "mediumScore": { "value": 3,   "version": "0.5.0", "date": "2026-11-04", "why": "中宝石面额，体量约 2.25 倍面积，取 3 倍便于凑整" },
+    "gravity":     { "value": 0.3, "version": "0.5.0", "date": "2026-11-04", "why": "宝石自重，略轻于玩家 0.4，掉出来飘一点更好捡" },
+    "popUpSpeed":  { "value": 2.2, "version": "0.5.0", "date": "2026-11-04", "why": "敌人死亡时宝石向上弹出初速，DW-09 描述宝石是被抛出的物理对象" },
+    "bounceFactor":{ "value": 0.45,"version": "0.5.0", "date": "2026-11-04", "why": "落地反弹系数，太低像贴着地面，太高会弹走" },
+    "maxBounces":  { "value": 2,   "version": "0.5.0", "date": "2026-11-04", "why": "反弹两次后停住，防止无限抖动" },
+    "lifeSteps":   { "value": 180, "version": "0.5.0", "date": "2026-11-04", "why": "3 秒存活，DW-09 明确宝石会过期，形成快捡压力" },
+    "blinkSteps":  { "value": 60,  "version": "0.5.0", "date": "2026-11-04", "why": "最后 1 秒闪烁预警，对应 DW-09 的 sfxGemDisappearWarn 语汇" },
+    "chargePerGem":{ "value": 1,   "version": "0.5.0", "date": "2026-11-04", "why": "DW-09：宝石拾取入账到枪靴充能，scrRechargeGem → gainCharge，每颗回 1 格" }
+  },
+  "stomp": {
+    "bounceVy":      { "value": 3.2,  "version": "0.5.0", "date": "2026-11-04", "why": "踩踏弹起，约跳跃初速 5.99 的 53%，能连踩但跳不了最高" },
+    "toleranceY":    { "value": 6,    "version": "0.5.0", "date": "2026-11-04", "why": "判定「从上方落脚」的容差：玩家脚底须高于敌人中心 6px 以上，否则算撞上" }
   }
 }
