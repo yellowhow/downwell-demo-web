@@ -2849,10 +2849,9 @@ System.register("chunks:///_virtual/InputState.ts", ['cc'], function (exports) {
             case KeyCode.SHIFT_LEFT:
             case KeyCode.SHIFT_RIGHT:
             case KeyCode.SPACE:
-              this._setKeyChannel('jump', down);
-              break;
             case KeyCode.KEY_Z:
             case KeyCode.KEY_J:
+              this._setKeyChannel('jump', down);
               this._setKeyChannel('fire', down);
               break;
           }
@@ -3350,11 +3349,18 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           _this._vx = 0;
           _this._vy = 0;
           _this._onGround = false;
+          _this._jumpStepsLeft = 0;
           _this._stepBound = false;
           _this._sprite = null;
-          _this._idleFrame = null;
-          _this._airFrame = null;
-          _this._spriteGrounded = true;
+          _this._framesIdle = [];
+          _this._framesSpin = [];
+          _this._framesAir = [];
+          _this._framesShoot = [];
+          _this._spritesReady = false;
+          _this._animState = 'idle';
+          _this._animIndex = 0;
+          _this._animStep = 0;
+          _this._spinDone = false;
           _this.firingHeld = false;
           _this.controlsLocked = false;
           _this._knockbackSteps = 0;
@@ -3478,10 +3484,15 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
             var _this$_audio;
             this._vy = player.jumpInitialSpeed;
             this._onGround = false;
+            this._jumpStepsLeft = player.minJumpSteps;
+            this._startSpinAnim();
             (_this$_audio = this._audio) == null || _this$_audio.play('jump');
           }
-          if (!this.controlsLocked && !inputState.jumpHeld && this._vy > 0 && player.jumpReleaseMode === 'cut') {
+          if (!this.controlsLocked && !inputState.jumpHeld && this._vy > 0 && player.jumpReleaseMode === 'cut' && this._jumpStepsLeft <= 0) {
             this._vy = 0;
+          }
+          if (this._jumpStepsLeft > 0) {
+            this._jumpStepsLeft -= 1;
           }
           var moveX = this._vx;
           this._x += moveX;
@@ -3491,7 +3502,7 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           this._onGround = false;
           this._separateAxis(tileSize, halfW, halfH, false, 0, moveY);
           this.node.setPosition(this._x, this._y);
-          this._updateGroundSprite();
+          this._updatePlayerAnim();
           inputState.consumeEdges();
         };
         _proto._loadPlayerSprites = function _loadPlayerSprites() {
@@ -3501,43 +3512,131 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
               console.error('[PlayerController] loadBundle failed bundle=mainui', bundleErr);
               return;
             }
-            bundle.load('sprite/player/idle_00/spriteFrame', SpriteFrame, function (idleErr, idle) {
-              if (idleErr || !idle) {
-                console.error('[PlayerController] bundle.load failed path=sprite/player/idle_00/spriteFrame', idleErr);
+            bundle.loadDir('sprite/player', SpriteFrame, function (err, assets) {
+              if (err || !assets) {
+                console.error('[PlayerController] loadDir failed path=sprite/player', err);
                 return;
               }
-              _this3._idleFrame = idle;
-              if (_this3._onGround) {
-                _this3._applyGroundSprite(true);
-              }
-            });
-            bundle.load('sprite/player/air_00/spriteFrame', SpriteFrame, function (airErr, air) {
-              if (airErr || !air) {
-                console.error('[PlayerController] bundle.load failed path=sprite/player/air_00/spriteFrame', airErr);
-                return;
-              }
-              _this3._airFrame = air;
-              if (!_this3._onGround) {
-                _this3._applyGroundSprite(false);
-              }
+              var byPrefix = function byPrefix(prefix) {
+                return assets.filter(function (a) {
+                  return a.name.startsWith(prefix);
+                }).sort(function (a, b) {
+                  return a.name.localeCompare(b.name);
+                });
+              };
+              _this3._framesIdle = byPrefix('idle_');
+              _this3._framesSpin = byPrefix('spin_');
+              _this3._framesAir = byPrefix('air_');
+              _this3._framesShoot = byPrefix('shoot_');
+              _this3._spritesReady = true;
+              _this3._applyGroundSprite(_this3._onGround);
             });
           });
         };
-        _proto._updateGroundSprite = function _updateGroundSprite() {
-          if (this._onGround === this._spriteGrounded) {
+        _proto._updatePlayerAnim = function _updatePlayerAnim() {
+          if (!this._spritesReady) {
             return;
           }
-          this._applyGroundSprite(this._onGround);
-        };
+          var firingAir = this.firingHeld && !this._onGround;
+          if (this._onGround) {
+            this._setAnimState('idle');
+          } else if (firingAir) {
+            this._setAnimState('shoot');
+          } else if (this._animState === 'spin') {
+            if (this._spinDone) {
+              this._setAnimState('air');
+            }
+          } else if (this._animState === 'shoot') {
+            this._setAnimState('air');
+          } else if (this._animState === 'idle') {
+            this._setAnimState('air');
+          }
+          this._advanceAnimFrame();
+          this._applyAnimFrame();
+        }
+
+        /** 兼容旧调用：落地 idle / 空中 air，由状态机多帧播放。 */;
         _proto._applyGroundSprite = function _applyGroundSprite(onGround) {
-          this._spriteGrounded = onGround;
+          if (!this._spritesReady) {
+            return;
+          }
+          this._setAnimState(onGround ? 'idle' : 'air');
+          this._applyAnimFrame();
+        };
+        _proto._startSpinAnim = function _startSpinAnim() {
+          this._setAnimState('spin');
+        };
+        _proto._setAnimState = function _setAnimState(next) {
+          if (this._animState === next) {
+            return;
+          }
+          this._animState = next;
+          this._animIndex = 0;
+          this._animStep = 0;
+          this._spinDone = next !== 'spin';
+        };
+        _proto._framesForState = function _framesForState(state) {
+          switch (state) {
+            case 'idle':
+              return this._framesIdle;
+            case 'spin':
+              return this._framesSpin;
+            case 'air':
+              return this._framesAir;
+            case 'shoot':
+              return this._framesShoot;
+            default:
+              return this._framesIdle;
+          }
+        };
+        _proto._stepsPerFrameForState = function _stepsPerFrameForState(state) {
+          var anim = getTuning().player.anim;
+          switch (state) {
+            case 'idle':
+              return anim.idleStepsPerFrame;
+            case 'spin':
+              return anim.spinStepsPerFrame;
+            case 'air':
+              return anim.airStepsPerFrame;
+            case 'shoot':
+              return anim.shootStepsPerFrame;
+            default:
+              return anim.idleStepsPerFrame;
+          }
+        };
+        _proto._advanceAnimFrame = function _advanceAnimFrame() {
+          var frames = this._framesForState(this._animState);
+          if (frames.length === 0) {
+            return;
+          }
+          this._animStep += 1;
+          var spf = Math.max(1, this._stepsPerFrameForState(this._animState));
+          if (this._animStep < spf) {
+            return;
+          }
+          this._animStep = 0;
+          var nextIndex = this._animIndex + 1;
+          if (this._animState === 'spin') {
+            if (nextIndex >= frames.length) {
+              this._animIndex = frames.length - 1;
+              this._spinDone = true;
+            } else {
+              this._animIndex = nextIndex;
+            }
+            return;
+          }
+          this._animIndex = nextIndex >= frames.length ? 0 : nextIndex;
+        };
+        _proto._applyAnimFrame = function _applyAnimFrame() {
           if (!this._sprite) {
             return;
           }
-          var frame = onGround ? this._idleFrame : this._airFrame;
-          if (frame) {
-            this._sprite.spriteFrame = frame;
+          var frames = this._framesForState(this._animState);
+          if (frames.length === 0) {
+            return;
           }
+          var idx = Math.min(this._animIndex, frames.length - 1);
+          this._sprite.spriteFrame = frames[idx];
         };
         _proto._approach = function _approach(current, target, maxDelta) {
           if (current < target) {
@@ -4026,7 +4125,7 @@ System.register("chunks:///_virtual/TouchControls.ts", ['./rollupPluginModLoBabe
 });
 
 System.register("chunks:///_virtual/TouchPad.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './TuningConfig.ts', './InputState.ts', './TouchControls.ts'], function (exports) {
-  var _inheritsLoose, _createForOfIteratorHelperLoose, cclegacy, _decorator, find, UITransform, Component, getTuning, inputState, TouchControls;
+  var _inheritsLoose, _createForOfIteratorHelperLoose, cclegacy, _decorator, find, UITransform, Vec3, Component, getTuning, inputState, TouchControls;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -4036,6 +4135,7 @@ System.register("chunks:///_virtual/TouchPad.ts", ['./rollupPluginModLoBabelHelp
       _decorator = module._decorator;
       find = module.find;
       UITransform = module.UITransform;
+      Vec3 = module.Vec3;
       Component = module.Component;
     }, function (module) {
       getTuning = module.getTuning;
@@ -4056,11 +4156,8 @@ System.register("chunks:///_virtual/TouchPad.ts", ['./rollupPluginModLoBabelHelp
         name: 'BtnRight',
         button: 'right'
       }, {
-        name: 'BtnFire',
-        button: 'fire'
-      }, {
-        name: 'BtnJump',
-        button: 'jump'
+        name: 'BtnAction',
+        button: 'action'
       }];
       var HIT_SLOP = 4;
       var MOUSE_ID = -1;
@@ -4087,6 +4184,9 @@ System.register("chunks:///_virtual/TouchPad.ts", ['./rollupPluginModLoBabelHelp
           _this = _Component.call.apply(_Component, [this].concat(args)) || this;
           _this._touchMap = new Map();
           _this._mouseDown = false;
+          _this._actionNode = null;
+          _this._actionNormalScale = new Vec3(1, 1, 1);
+          _this._actionPressedScale = new Vec3(0.9, 0.9, 1);
           /** capture: Cocos 在 canvas 冒泡阶段 stopPropagation，只有捕获阶段能收到 */
           _this._listenerOpts = {
             capture: true,
@@ -4150,6 +4250,7 @@ System.register("chunks:///_virtual/TouchPad.ts", ['./rollupPluginModLoBabelHelp
           if (typeof window === 'undefined') {
             return;
           }
+          this._actionNode = find('Canvas/TouchControls/BtnAction');
           window.addEventListener('touchstart', this._onTouchStart, this._listenerOpts);
           window.addEventListener('touchmove', this._onTouchMove, this._listenerOpts);
           window.addEventListener('touchend', this._onTouchEnd, this._listenerOpts);
@@ -4250,8 +4351,22 @@ System.register("chunks:///_virtual/TouchPad.ts", ['./rollupPluginModLoBabelHelp
         };
         _proto._setButtonDown = function _setButtonDown(btn, down) {
           var _find;
+          if (btn === 'action') {
+            inputState.setTouch('jump', down);
+            inputState.setTouch('fire', down);
+            this._setActionVisual(down);
+            return;
+          }
           inputState.setTouch(btn, down);
           (_find = find('Canvas/TouchControls')) == null || (_find = _find.getComponent(TouchControls)) == null || _find.setPressed(btn, down);
+        };
+        _proto._setActionVisual = function _setActionVisual(down) {
+          var _this$_actionNode;
+          var node = (_this$_actionNode = this._actionNode) != null ? _this$_actionNode : find('Canvas/TouchControls/BtnAction');
+          if (!node) {
+            return;
+          }
+          node.setScale(down ? this._actionPressedScale : this._actionNormalScale);
         };
         return TouchPad;
       }(Component)) || _class));
@@ -4297,8 +4412,15 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
           gravity: 0.4,
           horizontalSpeed: 1.2,
           accelSteps: 3,
-          jumpInitialSpeed: 6.1968,
-          jumpReleaseMode: 'cut'
+          jumpInitialSpeed: 6.2,
+          minJumpSteps: 6,
+          jumpReleaseMode: 'cut',
+          anim: {
+            idleStepsPerFrame: 12,
+            airStepsPerFrame: 8,
+            shootStepsPerFrame: 5,
+            spinStepsPerFrame: 4
+          }
         },
         level: {
           tileSize: 16,
@@ -4386,7 +4508,14 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
             horizontalSpeed: tuning.player.horizontalSpeed,
             accelSteps: tuning.player.accelSteps,
             jumpInitialSpeed: tuning.player.jumpInitialSpeed,
-            jumpReleaseMode: tuning.player.jumpReleaseMode
+            minJumpSteps: tuning.player.minJumpSteps,
+            jumpReleaseMode: tuning.player.jumpReleaseMode,
+            anim: {
+              idleStepsPerFrame: tuning.player.anim.idleStepsPerFrame,
+              airStepsPerFrame: tuning.player.anim.airStepsPerFrame,
+              shootStepsPerFrame: tuning.player.anim.shootStepsPerFrame,
+              spinStepsPerFrame: tuning.player.anim.spinStepsPerFrame
+            }
           },
           level: {
             tileSize: tuning.level.tileSize,
@@ -4531,6 +4660,10 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
         if (!isRecord(raw.player)) {
           throw new Error('missing player');
         }
+        var playerAnimRaw = isRecord(raw.player.anim) ? raw.player.anim : null;
+        if (!playerAnimRaw) {
+          throw new Error('missing player.anim');
+        }
         if (!isRecord(raw.level)) {
           throw new Error('missing level');
         }
@@ -4559,7 +4692,14 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
             horizontalSpeed: readNumberValue(raw.player.horizontalSpeed, 'player.horizontalSpeed'),
             accelSteps: readNumberValue(raw.player.accelSteps, 'player.accelSteps'),
             jumpInitialSpeed: readNumberValue(raw.player.jumpInitialSpeed, 'player.jumpInitialSpeed'),
-            jumpReleaseMode: readStringValue(raw.player.jumpReleaseMode, 'player.jumpReleaseMode')
+            minJumpSteps: readNumberValue(raw.player.minJumpSteps, 'player.minJumpSteps'),
+            jumpReleaseMode: readStringValue(raw.player.jumpReleaseMode, 'player.jumpReleaseMode'),
+            anim: {
+              idleStepsPerFrame: readNumberValue(playerAnimRaw.idleStepsPerFrame, 'player.anim.idleStepsPerFrame'),
+              airStepsPerFrame: readNumberValue(playerAnimRaw.airStepsPerFrame, 'player.anim.airStepsPerFrame'),
+              shootStepsPerFrame: readNumberValue(playerAnimRaw.shootStepsPerFrame, 'player.anim.shootStepsPerFrame'),
+              spinStepsPerFrame: readNumberValue(playerAnimRaw.spinStepsPerFrame, 'player.anim.spinStepsPerFrame')
+            }
           },
           level: {
             tileSize: readNumberValue(raw.level.tileSize, 'level.tileSize'),

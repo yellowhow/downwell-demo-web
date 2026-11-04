@@ -1,5 +1,5 @@
 {
-  "meta": { "version": "0.7.0", "date": "2026-11-04" },
+  "meta": { "version": "0.8.0", "date": "2026-11-04" },
   "loop": {
     "fixedStepHz":   { "value": 60, "version": "0.1.0", "date": "2026-11-04", "why": "DW-01 实录：18 个房间 speed 全为 60" },
     "maxCatchUpSteps": { "value": 5, "version": "0.1.0", "date": "2026-11-04", "why": "防后台切回时补步雪崩" }
@@ -16,8 +16,15 @@
     "gravity":           { "value": 0.4,     "version": "0.2.0", "date": "2026-11-04", "why": "DW-17 §4 推荐区间 0.35~0.5 px/step²，取中值" },
     "horizontalSpeed":   { "value": 1.2,     "version": "0.2.0", "date": "2026-11-04", "why": "1s 跨 72px = 3 身位（DW-17 §3.2）" },
     "accelSteps":        { "value": 3,       "version": "0.2.0", "date": "2026-11-04", "why": "起速用 3 步到全速，≈0.05s 缓动（拍板项②：有黏滞）" },
-    "jumpInitialSpeed":  { "value": 5.99,    "version": "0.2.1", "date": "2026-11-04", "why": "离散欧拉积分比连续解多走约半个 v0；6.1968→实测 51.15px，修正为 5.99 使实测落回 48±5%" },
-    "jumpReleaseMode":   { "value": "cut",   "version": "0.2.0", "date": "2026-11-04", "why": "松键即把上升速度归零（拍板项③：马里奥式截断）" }
+    "jumpInitialSpeed":  { "value": 6.2,     "version": "0.8.0", "date": "2026-11-04", "why": "跳高 sqrt(2×0.4×48)=6.197 → 48px = 2 身位（用户要求）；原 5.99 只有 44.85px = 1.87 身位" },
+    "minJumpSteps":      { "value": 6,       "version": "0.8.0", "date": "2026-11-04", "why": "起跳后 6 步（0.1s）内禁止截断上升。触屏轻点只有 1~2 帧，原逻辑会只跳 6~12px（0.25~0.48 身位），玩家以为没跳起来。6 步 ≈ 30px = 1.25 身位，让点按也有明确反馈" },
+    "jumpReleaseMode":   { "value": "cut",   "version": "0.8.0", "date": "2026-11-04", "why": "保持 cut，但受 minJumpSteps 保护" },
+    "anim": {
+      "idleStepsPerFrame":  { "value": 12, "version": "0.8.0", "date": "2026-11-04", "why": "idle 4 帧循环，12 步/帧 = 5fps，站立呼吸感" },
+      "airStepsPerFrame":   { "value": 8,  "version": "0.8.0", "date": "2026-11-04", "why": "air 5 帧循环，8 步/帧 = 7.5fps" },
+      "shootStepsPerFrame": { "value": 5,  "version": "0.8.0", "date": "2026-11-04", "why": "shoot 4 帧循环，5 步/帧 = 12fps，射击要有反馈速度" },
+      "spinStepsPerFrame":  { "value": 4,  "version": "0.8.0", "date": "2026-11-04", "why": "spin 8 帧播一次，4 步/帧 = 15fps，起跳旋转要利落" }
+    }
   },
   "level": {
     "tileSize":            { "value": 16, "version": "0.6.0", "date": "2026-11-04", "why": "原作 sprTile1 是 16x16（DW-07 实录），8px 格子铺不上；改后可玩区仍 96px 宽，手感不变" },
