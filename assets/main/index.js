@@ -524,11 +524,18 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
       var DebugOverlayLoader = exports('DebugOverlayLoader', (_dec = ccclass('DebugOverlayLoader'), _dec(_class = /*#__PURE__*/function (_Component) {
         _inheritsLoose(DebugOverlayLoader, _Component);
         function DebugOverlayLoader() {
-          return _Component.apply(this, arguments) || this;
+          var _this;
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+          _this = _Component.call.apply(_Component, [this].concat(args)) || this;
+          _this._hudFrameGateCount = 0;
+          _this._hudFrameLoadStarted = false;
+          return _this;
         }
         var _proto = DebugOverlayLoader.prototype;
         _proto.onLoad = function onLoad() {
-          var _this = this;
+          var _this2 = this;
           this._ensureGameplayComponents();
           var canvas = find('Canvas');
           if (!canvas) {
@@ -559,16 +566,16 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
                 console.error('[DebugOverlayLoader] DebugOverlay component missing on instantiated prefab/DebugOverlay');
                 return;
               }
-              overlay.driver = _this.getComponent(FixedStepDriver);
+              overlay.driver = _this2.getComponent(FixedStepDriver);
               console.log('[DebugOverlayLoader] prefab instantiated');
               setTimeout(function () {
-                _this._logSelfCheck(overlay);
+                _this2._logSelfCheck(overlay);
               }, 3000);
-              _this._loadTouchControls(canvas);
-              _this._loadChargeBar(canvas);
-              _this._loadHeartHud(canvas);
-              _this._loadScoreHud(canvas);
-              _this._loadGameOver(canvas);
+              _this2._loadTouchControls(canvas);
+              _this2._loadChargeBar(canvas);
+              _this2._loadHeartHud(canvas);
+              _this2._loadScoreHud(canvas);
+              _this2._loadGameOver(canvas);
             });
           });
         };
@@ -586,6 +593,7 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
           }
         };
         _proto._loadChargeBar = function _loadChargeBar(canvas) {
+          var _this3 = this;
           assetManager.loadBundle('mainui', function (bundleErr, bundle) {
             if (bundleErr || !bundle) {
               console.error('[DebugOverlayLoader] loadBundle failed bundle=mainui for ChargeBar', bundleErr);
@@ -602,6 +610,7 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
               if (!node.getComponent(ChargeBar)) {
                 node.addComponent(ChargeBar);
               }
+              _this3._tryLoadHudFrameAfterHudWidgets(canvas);
             });
           });
         };
@@ -623,6 +632,7 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
           });
         };
         _proto._loadHeartHud = function _loadHeartHud(canvas) {
+          var _this4 = this;
           assetManager.loadBundle('mainui', function (bundleErr, bundle) {
             if (bundleErr || !bundle) {
               console.error('[DebugOverlayLoader] loadBundle failed bundle=mainui for HeartHud', bundleErr);
@@ -639,10 +649,12 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
               if (!node.getComponent(HeartHud)) {
                 node.addComponent(HeartHud);
               }
+              _this4._tryLoadHudFrameAfterHudWidgets(canvas);
             });
           });
         };
         _proto._loadScoreHud = function _loadScoreHud(canvas) {
+          var _this5 = this;
           assetManager.loadBundle('mainui', function (bundleErr, bundle) {
             if (bundleErr || !bundle) {
               console.error('[DebugOverlayLoader] loadBundle failed bundle=mainui for ScoreHud', bundleErr);
@@ -659,6 +671,33 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
               if (!node.getComponent(ScoreHud)) {
                 node.addComponent(ScoreHud);
               }
+              _this5._tryLoadHudFrameAfterHudWidgets(canvas);
+            });
+          });
+        };
+        _proto._tryLoadHudFrameAfterHudWidgets = function _tryLoadHudFrameAfterHudWidgets(canvas) {
+          this._hudFrameGateCount += 1;
+          if (this._hudFrameGateCount < 3 || this._hudFrameLoadStarted) {
+            return;
+          }
+          this._hudFrameLoadStarted = true;
+          this._loadHudFrame(canvas);
+        };
+        _proto._loadHudFrame = function _loadHudFrame(canvas) {
+          assetManager.loadBundle('mainui', function (bundleErr, bundle) {
+            if (bundleErr || !bundle) {
+              console.error('[DebugOverlayLoader] loadBundle failed bundle=mainui for HudFrame', bundleErr);
+              return;
+            }
+            bundle.load('prefab/HudFrame', Prefab, function (loadErr, prefab) {
+              if (loadErr || !prefab) {
+                console.error('[DebugOverlayLoader] hud frame prefab load failed: prefab/HudFrame');
+                return;
+              }
+              var node = instantiate(prefab);
+              canvas.addChild(node);
+              node.setPosition(0, 0);
+              node.setSiblingIndex(1);
             });
           });
         };
@@ -2205,6 +2244,104 @@ System.register("chunks:///_virtual/HeartHud.ts", ['./rollupPluginModLoBabelHelp
   };
 });
 
+System.register("chunks:///_virtual/HudFrame.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, find, Component;
+  return {
+    setters: [function (module) {
+      _inheritsLoose = module.inheritsLoose;
+    }, function (module) {
+      cclegacy = module.cclegacy;
+      _decorator = module._decorator;
+      find = module.find;
+      Component = module.Component;
+    }],
+    execute: function () {
+      var _dec, _class;
+      cclegacy._RF.push({}, "a1b2cPU5fZHiaASNFZ4q8AB", "HudFrame", undefined);
+      var ccclass = _decorator.ccclass;
+      var RETRY_INTERVAL_SEC = 0.1;
+      var MAX_RETRIES = 30;
+      var HudFrame = exports('HudFrame', (_dec = ccclass('HudFrame'), _dec(_class = /*#__PURE__*/function (_Component) {
+        _inheritsLoose(HudFrame, _Component);
+        function HudFrame() {
+          var _this;
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+          _this = _Component.call.apply(_Component, [this].concat(args)) || this;
+          _this._retryCount = 0;
+          _this._retryTimer = null;
+          _this._applied = false;
+          return _this;
+        }
+        var _proto = HudFrame.prototype;
+        _proto.onLoad = function onLoad() {
+          window.__dwHudFrame = this;
+          this._scheduleRetry();
+        };
+        _proto.onDestroy = function onDestroy() {
+          this._clearRetryTimer();
+        };
+        _proto._clearRetryTimer = function _clearRetryTimer() {
+          if (this._retryTimer !== null) {
+            clearTimeout(this._retryTimer);
+            this._retryTimer = null;
+          }
+        };
+        _proto._scheduleRetry = function _scheduleRetry() {
+          this._clearRetryTimer();
+          this._tryApplyLayout();
+        };
+        _proto._tryApplyLayout = function _tryApplyLayout() {
+          var _this2 = this;
+          if (this._applied) {
+            return;
+          }
+          var heartHud = find('Canvas/HeartHud');
+          var scoreHud = find('Canvas/ScoreHud');
+          var chargeBar = find('Canvas/ChargeBar');
+          var debugOverlay = find('Canvas/DebugOverlay');
+          if (!heartHud || !scoreHud || !chargeBar || !debugOverlay) {
+            this._retryCount += 1;
+            if (this._retryCount >= MAX_RETRIES) {
+              if (!heartHud) {
+                console.error('[HudFrame] HeartHud not found');
+              }
+              if (!scoreHud) {
+                console.error('[HudFrame] ScoreHud not found');
+              }
+              if (!chargeBar) {
+                console.error('[HudFrame] ChargeBar not found');
+              }
+              if (!debugOverlay) {
+                console.error('[HudFrame] DebugOverlay not found');
+              }
+              return;
+            }
+            this._retryTimer = setTimeout(function () {
+              return _this2._tryApplyLayout();
+            }, RETRY_INTERVAL_SEC * 1000);
+            return;
+          }
+          this._applied = true;
+          this._clearRetryTimer();
+          heartHud.setPosition(0, 118);
+          scoreHud.setPosition(-46, 100);
+          chargeBar.setPosition(0, -70);
+          var debugPos = debugOverlay.getPosition();
+          debugOverlay.setPosition(debugPos.x, 90);
+          var parent = debugOverlay.parent;
+          if (parent) {
+            debugOverlay.setSiblingIndex(parent.children.length - 1);
+          }
+        };
+        return HudFrame;
+      }(Component)) || _class));
+      cclegacy._RF.pop();
+    }
+  };
+});
+
 System.register("chunks:///_virtual/InputState.ts", ['cc'], function (exports) {
   var cclegacy, KeyCode;
   return {
@@ -2696,9 +2833,9 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
   };
 });
 
-System.register("chunks:///_virtual/main", ['./FixedStepDriver.ts', './InputState.ts', './KeyboardInput.ts', './TuningConfig.ts', './ViewBootstrap.ts', './stepAccumulator.ts', './Bullet.ts', './BulletPool.ts', './Enemy.ts', './EnemyManager.ts', './Gem.ts', './GemManager.ts', './Gunboots.ts', './LevelData.ts', './LevelView.ts', './PlayerController.ts', './PlayerHealth.ts', './WorldScroll.ts', './ChargeBar.ts', './DebugOverlay.ts', './DebugOverlayLoader.ts', './GameOver.ts', './HeartHud.ts', './ScoreHud.ts', './TouchControls.ts', './TouchPad.ts'], function () {
+System.register("chunks:///_virtual/main", ['./FixedStepDriver.ts', './InputState.ts', './KeyboardInput.ts', './TuningConfig.ts', './ViewBootstrap.ts', './stepAccumulator.ts', './Bullet.ts', './BulletPool.ts', './Enemy.ts', './EnemyManager.ts', './Gem.ts', './GemManager.ts', './Gunboots.ts', './LevelData.ts', './LevelView.ts', './PlayerController.ts', './PlayerHealth.ts', './WorldScroll.ts', './ChargeBar.ts', './DebugOverlay.ts', './DebugOverlayLoader.ts', './GameOver.ts', './HeartHud.ts', './HudFrame.ts', './ScoreHud.ts', './TouchControls.ts', './TouchPad.ts'], function () {
   return {
-    setters: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+    setters: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
     execute: function () {}
   };
 });
