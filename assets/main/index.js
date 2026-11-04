@@ -432,6 +432,229 @@ System.register("chunks:///_virtual/ChargeBar.ts", ['./rollupPluginModLoBabelHel
   };
 });
 
+System.register("chunks:///_virtual/ComboHud.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './TuningConfig.ts', './ComboTracker.ts'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, Color, Label, find, Component, getTuning, ComboTracker;
+  return {
+    setters: [function (module) {
+      _inheritsLoose = module.inheritsLoose;
+    }, function (module) {
+      cclegacy = module.cclegacy;
+      _decorator = module._decorator;
+      Color = module.Color;
+      Label = module.Label;
+      find = module.find;
+      Component = module.Component;
+    }, function (module) {
+      getTuning = module.getTuning;
+    }, function (module) {
+      ComboTracker = module.ComboTracker;
+    }],
+    execute: function () {
+      var _dec, _class;
+      cclegacy._RF.push({}, "eef41tXb2FK0JeNF9JtqIWp", "ComboHud", undefined);
+      var ccclass = _decorator.ccclass;
+      var BREAK_COLOR = new Color(255, 64, 64, 255);
+      var NORMAL_COLOR = new Color(255, 255, 255, 255);
+      var ComboHud = exports('ComboHud', (_dec = ccclass('ComboHud'), _dec(_class = /*#__PURE__*/function (_Component) {
+        _inheritsLoose(ComboHud, _Component);
+        function ComboHud() {
+          var _this;
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+          _this = _Component.call.apply(_Component, [this].concat(args)) || this;
+          _this._label = null;
+          _this._labelNode = null;
+          _this._lastCount = -1;
+          _this._breakPending = false;
+          return _this;
+        }
+        var _proto = ComboHud.prototype;
+        _proto.onLoad = function onLoad() {
+          var _child$getComponent;
+          var child = this.node.getChildByName('Label');
+          this._labelNode = child;
+          this._label = (_child$getComponent = child == null ? void 0 : child.getComponent(Label)) != null ? _child$getComponent : null;
+          if (typeof window !== 'undefined') {
+            window.__dwComboHud = this;
+          }
+        };
+        _proto.update = function update() {
+          var _find,
+            _this2 = this;
+          var combo = (_find = find('Game')) == null ? void 0 : _find.getComponent(ComboTracker);
+          if (!combo) {
+            this.node.active = false;
+            return;
+          }
+          if (combo.justBroke && !this._breakPending) {
+            this._breakPending = true;
+            combo.clearJustBroke();
+            if (this._label) {
+              this._label.color = BREAK_COLOR;
+            }
+            if (this._labelNode) {
+              this._labelNode.setScale(1.3, 1.3, 1);
+            }
+            this.scheduleOnce(function () {
+              if (_this2._label) {
+                _this2._label.color = NORMAL_COLOR;
+              }
+              if (_this2._labelNode) {
+                _this2._labelNode.setScale(1, 1, 1);
+              }
+              _this2._breakPending = false;
+            }, 0.25);
+          }
+          var minForTip = getTuning().combo.minForTip;
+          var count = combo.count;
+          if (count < minForTip) {
+            this.node.active = false;
+            this._lastCount = -1;
+            return;
+          }
+          this.node.active = true;
+          if (count !== this._lastCount && this._label) {
+            this._lastCount = count;
+            this._label.string = "x" + count;
+          }
+        };
+        return ComboHud;
+      }(Component)) || _class));
+      cclegacy._RF.pop();
+    }
+  };
+});
+
+System.register("chunks:///_virtual/ComboTracker.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './TuningConfig.ts', './GemManager.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, Component, FixedStepDriver, getTuning, GemManager;
+  return {
+    setters: [function (module) {
+      _inheritsLoose = module.inheritsLoose;
+      _createClass = module.createClass;
+    }, function (module) {
+      cclegacy = module.cclegacy;
+      _decorator = module._decorator;
+      find = module.find;
+      Component = module.Component;
+    }, function (module) {
+      FixedStepDriver = module.FixedStepDriver;
+    }, function (module) {
+      getTuning = module.getTuning;
+    }, function (module) {
+      GemManager = module.GemManager;
+    }],
+    execute: function () {
+      var _dec, _class;
+      cclegacy._RF.push({}, "7554aKfkgVN6ZgrXfuaB1BU", "ComboTracker", undefined);
+      var ccclass = _decorator.ccclass;
+      var ComboTracker = exports('ComboTracker', (_dec = ccclass('ComboTracker'), _dec(_class = /*#__PURE__*/function (_Component) {
+        _inheritsLoose(ComboTracker, _Component);
+        function ComboTracker() {
+          var _this;
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+          _this = _Component.call.apply(_Component, [this].concat(args)) || this;
+          _this._count = 0;
+          _this._timer = 0;
+          _this._justBroke = false;
+          _this._brokeAt = 0;
+          _this._stepBound = false;
+          _this._gemManager = null;
+          return _this;
+        }
+        var _proto = ComboTracker.prototype;
+        _proto.clearJustBroke = function clearJustBroke() {
+          this._justBroke = false;
+        };
+        _proto.onLoad = function onLoad() {
+          this._gemManager = this.node.getComponent(GemManager);
+          this._bindStep();
+          if (typeof window !== 'undefined') {
+            window.__dwCombo = this;
+          }
+        };
+        _proto.hit = function hit() {
+          var combo = getTuning().combo;
+          this._count += 1;
+          this._timer = combo.windowSteps;
+          if (this._count % combo.rewardEvery === 0) {
+            this._spawnReward(combo.rewardKind);
+          }
+        };
+        _proto.onPlayerHurt = function onPlayerHurt() {
+          var minForTip = getTuning().combo.minForTip;
+          if (this._count >= minForTip) {
+            this._brokeAt = this._count;
+            this._justBroke = true;
+          }
+          this._count = 0;
+          this._timer = 0;
+        };
+        _proto.step = function step() {
+          if (this._timer <= 0) {
+            return;
+          }
+          this._timer -= 1;
+          if (this._timer === 0) {
+            var minForTip = getTuning().combo.minForTip;
+            if (this._count >= minForTip) {
+              this._count = 0;
+            }
+          }
+        };
+        _proto._spawnReward = function _spawnReward(kind) {
+          if (!this._gemManager) {
+            this._gemManager = this.node.getComponent(GemManager);
+          }
+          var player = find('World/Player');
+          if (!this._gemManager || !player) {
+            return;
+          }
+          var gemKind = kind === 'medium' ? 'medium' : 'small';
+          this._gemManager.spawnAt(gemKind, player.position.x, player.position.y);
+        };
+        _proto._bindStep = function _bindStep() {
+          var _this2 = this;
+          if (this._stepBound) {
+            return;
+          }
+          var driver = this.node.getComponent(FixedStepDriver);
+          if (!driver) {
+            console.error('[ComboTracker] FixedStepDriver not found on Game');
+            return;
+          }
+          driver.registerOnStep(function () {
+            if (_this2.enabled && _this2.node.activeInHierarchy) {
+              _this2.step();
+            }
+          });
+          this._stepBound = true;
+        };
+        _createClass(ComboTracker, [{
+          key: "count",
+          get: function get() {
+            return this._count;
+          }
+        }, {
+          key: "justBroke",
+          get: function get() {
+            return this._justBroke;
+          }
+        }, {
+          key: "brokeAt",
+          get: function get() {
+            return this._brokeAt;
+          }
+        }]);
+        return ComboTracker;
+      }(Component)) || _class));
+      cclegacy._RF.pop();
+    }
+  };
+});
+
 System.register("chunks:///_virtual/DebugOverlay.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './TuningConfig.ts'], function (exports) {
   var _applyDecoratedDescriptor, _inheritsLoose, _initializerDefineProperty, _assertThisInitialized, _createClass, cclegacy, _decorator, Label, find, director, Component, FixedStepDriver, initTuning, getTuning, getTuningSource;
   return {
@@ -584,8 +807,8 @@ System.register("chunks:///_virtual/DebugOverlay.ts", ['./rollupPluginModLoBabel
   };
 });
 
-System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './DebugOverlay.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Gunboots.ts', './ChargeBar.ts', './HeartHud.ts', './GameOver.ts', './ScoreHud.ts', './HudFrame.ts', './PlayerHealth.ts', './AudioManager.ts'], function (exports) {
-  var _inheritsLoose, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, view, settings, Component, DebugOverlay, FixedStepDriver, getTuning, getTuningSource, BulletPool, Gunboots, ChargeBar, HeartHud, GameOver, ScoreHud, HudFrame, PlayerHealth, AudioManager;
+System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './DebugOverlay.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Gunboots.ts', './ChargeBar.ts', './HeartHud.ts', './GameOver.ts', './ScoreHud.ts', './ComboHud.ts', './HudFrame.ts', './PlayerHealth.ts', './AudioManager.ts'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, view, settings, Component, DebugOverlay, FixedStepDriver, getTuning, getTuningSource, BulletPool, Gunboots, ChargeBar, HeartHud, GameOver, ScoreHud, ComboHud, HudFrame, PlayerHealth, AudioManager;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -619,6 +842,8 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
       GameOver = module.GameOver;
     }, function (module) {
       ScoreHud = module.ScoreHud;
+    }, function (module) {
+      ComboHud = module.ComboHud;
     }, function (module) {
       HudFrame = module.HudFrame;
     }, function (module) {
@@ -679,6 +904,7 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
               _this._loadChargeBar(canvas);
               _this._loadHeartHud(canvas);
               _this._loadScoreHud(canvas);
+              _this._loadComboHud(canvas);
               _this._loadGameOver(canvas);
             });
           });
@@ -772,6 +998,26 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
               node.setPosition(-46, 66);
               if (!node.getComponent(ScoreHud)) {
                 node.addComponent(ScoreHud);
+              }
+            });
+          });
+        };
+        _proto._loadComboHud = function _loadComboHud(canvas) {
+          assetManager.loadBundle('mainui', function (bundleErr, bundle) {
+            if (bundleErr || !bundle) {
+              console.error('[DebugOverlayLoader] loadBundle failed bundle=mainui for ComboHud', bundleErr);
+              return;
+            }
+            bundle.load('prefab/ComboHud', Prefab, function (loadErr, prefab) {
+              if (loadErr || !prefab) {
+                console.error('[DebugOverlayLoader] combo hud prefab load failed: prefab/ComboHud');
+                return;
+              }
+              var node = instantiate(prefab);
+              canvas.addChild(node);
+              node.setPosition(-52, 86);
+              if (!node.getComponent(ComboHud)) {
+                node.addComponent(ComboHud);
               }
             });
           });
@@ -1082,8 +1328,8 @@ System.register("chunks:///_virtual/Enemy.ts", ['./rollupPluginModLoBabelHelpers
   };
 });
 
-System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Enemy.ts', './GemManager.ts', './LevelData.ts', './PlayerController.ts', './PlayerHealth.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, AudioManager, FixedStepDriver, getTuning, BulletPool, Enemy, GemManager, PLATFORM_SPECS, platformTopY, LEVEL_ROWS, LEVEL_COLS, LEVEL_GRID, PlayerController, PlayerHealth;
+System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './ComboTracker.ts', './Enemy.ts', './GemManager.ts', './LevelData.ts', './PlayerController.ts', './PlayerHealth.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, AudioManager, FixedStepDriver, getTuning, BulletPool, ComboTracker, Enemy, GemManager, PLATFORM_SPECS, platformTopY, LEVEL_ROWS, LEVEL_COLS, LEVEL_GRID, PlayerController, PlayerHealth;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -1105,6 +1351,8 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
       getTuning = module.getTuning;
     }, function (module) {
       BulletPool = module.BulletPool;
+    }, function (module) {
+      ComboTracker = module.ComboTracker;
     }, function (module) {
       Enemy = module.Enemy;
     }, function (module) {
@@ -1166,6 +1414,8 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
           _this._gemManager = null;
           _this._gemManagerWarned = false;
           _this._audio = null;
+          _this._combo = null;
+          _this._comboWarned = false;
           return _this;
         }
         var _proto = EnemyManager.prototype;
@@ -1208,6 +1458,11 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
           if (!this._gemManager) {
             console.error('[EnemyManager] GemManager not found on Game');
             this._gemManagerWarned = true;
+          }
+          this._combo = this.node.getComponent(ComboTracker);
+          if (!this._combo && !this._comboWarned) {
+            console.error('[EnemyManager] ComboTracker not found on Game');
+            this._comboWarned = true;
           }
           if (typeof window !== 'undefined') {
             window.__dwEnemies = this;
@@ -1322,6 +1577,8 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
               if (Math.abs(ex - bx) < ehw + bhw && Math.abs(ey - by) < ehh + bhh) {
                 pool.recycle(bullet);
                 if (_enemy.damage(1)) {
+                  var _this$_combo;
+                  (_this$_combo = this._combo) == null || _this$_combo.hit();
                   this._dropGemAndRecycle(_enemy);
                 }
                 break;
@@ -1366,6 +1623,8 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
               if (Math.abs(_ex - px) < _ehw + phw && Math.abs(_ey - py) < _ehh + phh && playerFootY - _ey > stomp.toleranceY) {
                 var _this$_audio;
                 if (_enemy2.damage(999)) {
+                  var _this$_combo2;
+                  (_this$_combo2 = this._combo) == null || _this$_combo2.hit();
                   this._dropGemAndRecycle(_enemy2);
                 }
                 (_this$_audio = this._audio) == null || _this$_audio.play('stomp');
@@ -2993,9 +3252,9 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
   };
 });
 
-System.register("chunks:///_virtual/main", ['./AudioManager.ts', './FixedStepDriver.ts', './InputState.ts', './KeyboardInput.ts', './TuningConfig.ts', './ViewBootstrap.ts', './stepAccumulator.ts', './Bullet.ts', './BulletPool.ts', './Enemy.ts', './EnemyManager.ts', './Gem.ts', './GemManager.ts', './Gunboots.ts', './LevelData.ts', './LevelView.ts', './PlayerController.ts', './PlayerHealth.ts', './WorldScroll.ts', './ChargeBar.ts', './DebugOverlay.ts', './DebugOverlayLoader.ts', './GameOver.ts', './HeartHud.ts', './HudFrame.ts', './ScoreHud.ts', './TouchControls.ts', './TouchPad.ts'], function () {
+System.register("chunks:///_virtual/main", ['./AudioManager.ts', './FixedStepDriver.ts', './InputState.ts', './KeyboardInput.ts', './TuningConfig.ts', './ViewBootstrap.ts', './stepAccumulator.ts', './Bullet.ts', './BulletPool.ts', './ComboTracker.ts', './Enemy.ts', './EnemyManager.ts', './Gem.ts', './GemManager.ts', './Gunboots.ts', './LevelData.ts', './LevelView.ts', './PlayerController.ts', './PlayerHealth.ts', './WorldScroll.ts', './ChargeBar.ts', './ComboHud.ts', './DebugOverlay.ts', './DebugOverlayLoader.ts', './GameOver.ts', './HeartHud.ts', './HudFrame.ts', './ScoreHud.ts', './TouchControls.ts', './TouchPad.ts'], function () {
   return {
-    setters: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+    setters: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
     execute: function () {}
   };
 });
@@ -3381,8 +3640,8 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
   };
 });
 
-System.register("chunks:///_virtual/PlayerHealth.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './FixedStepDriver.ts', './TuningConfig.ts', './PlayerController.ts', './GameOver.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, Sprite, find, Component, AudioManager, FixedStepDriver, initTuning, getTuning, PlayerController, GameOver;
+System.register("chunks:///_virtual/PlayerHealth.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './FixedStepDriver.ts', './TuningConfig.ts', './PlayerController.ts', './ComboTracker.ts', './GameOver.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, Sprite, find, Component, AudioManager, FixedStepDriver, initTuning, getTuning, PlayerController, ComboTracker, GameOver;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -3402,6 +3661,8 @@ System.register("chunks:///_virtual/PlayerHealth.ts", ['./rollupPluginModLoBabel
       getTuning = module.getTuning;
     }, function (module) {
       PlayerController = module.PlayerController;
+    }, function (module) {
+      ComboTracker = module.ComboTracker;
     }, function (module) {
       GameOver = module.GameOver;
     }],
@@ -3424,16 +3685,18 @@ System.register("chunks:///_virtual/PlayerHealth.ts", ['./rollupPluginModLoBabel
           _this._sprite = null;
           _this._spriteFlashOn = true;
           _this._audio = null;
+          _this._combo = null;
           return _this;
         }
         var _proto = PlayerHealth.prototype;
         _proto.onLoad = function onLoad() {
-          var _find$getComponent, _find;
+          var _find$getComponent, _find, _find$getComponent2, _find2;
           void initTuning();
           this._hp = this.maxHp;
           this.invulnLeft = 0;
           this._sprite = this.getComponent(Sprite);
           this._audio = (_find$getComponent = (_find = find('Game')) == null ? void 0 : _find.getComponent(AudioManager)) != null ? _find$getComponent : null;
+          this._combo = (_find$getComponent2 = (_find2 = find('Game')) == null ? void 0 : _find2.getComponent(ComboTracker)) != null ? _find$getComponent2 : null;
           if (typeof window !== 'undefined') {
             window.__dwHealth = this;
           }
@@ -3442,24 +3705,25 @@ System.register("chunks:///_virtual/PlayerHealth.ts", ['./rollupPluginModLoBabel
           this._bindStep();
         };
         _proto.takeDamage = function takeDamage(n, fromX) {
-          var _this$_audio, _find2;
+          var _this$_audio, _this$_combo, _find3;
           if (this.invulnLeft > 0 || this.isDead) {
             return false;
           }
           this._hp -= n;
           (_this$_audio = this._audio) == null || _this$_audio.play('player_hit');
+          (_this$_combo = this._combo) == null || _this$_combo.onPlayerHurt();
           this.invulnLeft = getTuning().health.invulnSteps;
-          var ctrl = (_find2 = find('World/Player')) == null ? void 0 : _find2.getComponent(PlayerController);
+          var ctrl = (_find3 = find('World/Player')) == null ? void 0 : _find3.getComponent(PlayerController);
           ctrl == null || ctrl.applyHurtKnockback(fromX);
           if (this._hp <= 0) {
-            var _this$_audio2, _find3;
+            var _this$_audio2, _find4;
             this._dead = true;
             (_this$_audio2 = this._audio) == null || _this$_audio2.play('death');
             console.log('[PlayerHealth] dead hp=' + this._hp);
             if (ctrl) {
               ctrl.controlsLocked = true;
             }
-            (_find3 = find('Canvas/GameOver')) == null || (_find3 = _find3.getComponent(GameOver)) == null || _find3.show();
+            (_find4 = find('Canvas/GameOver')) == null || (_find4 = _find4.getComponent(GameOver)) == null || _find4.show();
           }
           return true;
         };
@@ -4035,6 +4299,12 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
         stomp: {
           bounceVy: 3.2,
           toleranceY: 6
+        },
+        combo: {
+          windowSteps: 90,
+          minForTip: 3,
+          rewardEvery: 5,
+          rewardKind: 'medium'
         }
       };
       var current = cloneTuning(DEFAULT_TUNING);
@@ -4117,6 +4387,12 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
           stomp: {
             bounceVy: tuning.stomp.bounceVy,
             toleranceY: tuning.stomp.toleranceY
+          },
+          combo: {
+            windowSteps: tuning.combo.windowSteps,
+            minForTip: tuning.combo.minForTip,
+            rewardEvery: tuning.combo.rewardEvery,
+            rewardKind: tuning.combo.rewardKind
           }
         };
       }
@@ -4221,6 +4497,7 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
         var healthRaw = isRecord(raw.health) ? raw.health : null;
         var gemsRaw = isRecord(raw.gems) ? raw.gems : null;
         var stompRaw = isRecord(raw.stomp) ? raw.stomp : null;
+        var comboRaw = isRecord(raw.combo) ? raw.combo : null;
         return {
           loop: {
             fixedStepHz: readNumberValue(raw.loop.fixedStepHz, 'loop.fixedStepHz'),
@@ -4283,8 +4560,21 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
           stomp: {
             bounceVy: stompRaw ? readNumberValue(stompRaw.bounceVy, 'stomp.bounceVy') : DEFAULT_TUNING.stomp.bounceVy,
             toleranceY: stompRaw ? readNumberValue(stompRaw.toleranceY, 'stomp.toleranceY') : DEFAULT_TUNING.stomp.toleranceY
+          },
+          combo: {
+            windowSteps: comboRaw ? readNumberValue(comboRaw.windowSteps, 'combo.windowSteps') : DEFAULT_TUNING.combo.windowSteps,
+            minForTip: comboRaw ? readNumberValue(comboRaw.minForTip, 'combo.minForTip') : DEFAULT_TUNING.combo.minForTip,
+            rewardEvery: comboRaw ? readNumberValue(comboRaw.rewardEvery, 'combo.rewardEvery') : DEFAULT_TUNING.combo.rewardEvery,
+            rewardKind: comboRaw ? readComboRewardKind(comboRaw) : DEFAULT_TUNING.combo.rewardKind
           }
         };
+      }
+      function readComboRewardKind(comboRaw) {
+        var rk = comboRaw.rewardKind;
+        if (typeof rk === 'string') {
+          return rk;
+        }
+        return readStringValue(rk, 'combo.rewardKind');
       }
       function readNumberValue(field, path) {
         if (!isRecord(field)) {

@@ -146,6 +146,7 @@
         "ef3dafd5-3533-4060-98dd-2b408e0f71d2",
         "ef3dafd5-3533-4060-98dd-2b408e0f71d2@6c48a",
         "ef3dafd5-3533-4060-98dd-2b408e0f71d2@f9941",
+        "efdc512e-70d1-4cba-800c-143ce1cb8e7e",
         "f2a3b4c5-d6e7-4890-f123-456789abcdef",
         "f3000003-0003-4003-8003-000000000003",
         "f6f2dad4-0223-4b52-9f41-e634a9338ff5",
@@ -199,6 +200,11 @@
         ],
         "f2a3b4c5-d6e7-4890-f123-456789abcdef": [
             "prefab/ChargeBar",
+            "cc.Prefab",
+            1
+        ],
+        "efdc512e-70d1-4cba-800c-143ce1cb8e7e": [
+            "prefab/ComboHud",
             "cc.Prefab",
             1
         ],

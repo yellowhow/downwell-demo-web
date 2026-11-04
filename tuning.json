@@ -1,5 +1,5 @@
 {
-  "meta": { "version": "0.6.0", "date": "2026-11-04" },
+  "meta": { "version": "0.7.0", "date": "2026-11-04" },
   "loop": {
     "fixedStepHz":   { "value": 60, "version": "0.1.0", "date": "2026-11-04", "why": "DW-01 实录：18 个房间 speed 全为 60" },
     "maxCatchUpSteps": { "value": 5, "version": "0.1.0", "date": "2026-11-04", "why": "防后台切回时补步雪崩" }
@@ -61,5 +61,11 @@
   "stomp": {
     "bounceVy":      { "value": 3.2,  "version": "0.5.0", "date": "2026-11-04", "why": "踩踏弹起，约跳跃初速 5.99 的 53%，能连踩但跳不了最高" },
     "toleranceY":    { "value": 6,    "version": "0.5.0", "date": "2026-11-04", "why": "判定「从上方落脚」的容差：玩家脚底须高于敌人中心 6px 以上，否则算撞上" }
+  },
+  "combo": {
+    "windowSteps":   { "value": 90,  "version": "0.7.0", "date": "2026-11-04", "why": "连击窗口 1.5 秒（60 步/秒）；原作窗口不可得（DW-09 明确缺口），按「跳一层楼约 0.8~1.2 秒」的节奏取 1.5 秒，留一点余量" },
+    "minForTip":     { "value": 3,   "version": "0.7.0", "date": "2026-11-04", "why": "连到 3 才开始显示 COMBO 数字，避免每次都刷屏" },
+    "rewardEvery":   { "value": 5,   "version": "0.7.0", "date": "2026-11-04", "why": "每 5 连发一颗宝石（DW-09：达标发宝石而非发分数）" },
+    "rewardKind":    "medium"
   }
 }
