@@ -1,3 +1,109 @@
+System.register("chunks:///_virtual/AudioManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc'], function (exports) {
+  var _inheritsLoose, _createForOfIteratorHelperLoose, _createClass, cclegacy, _decorator, AudioSource, assetManager, AudioClip, Component;
+  return {
+    setters: [function (module) {
+      _inheritsLoose = module.inheritsLoose;
+      _createForOfIteratorHelperLoose = module.createForOfIteratorHelperLoose;
+      _createClass = module.createClass;
+    }, function (module) {
+      cclegacy = module.cclegacy;
+      _decorator = module._decorator;
+      AudioSource = module.AudioSource;
+      assetManager = module.assetManager;
+      AudioClip = module.AudioClip;
+      Component = module.Component;
+    }],
+    execute: function () {
+      var _dec, _class;
+      cclegacy._RF.push({}, "985e3VCz8ZBAo7b2XjUdgNk", "AudioManager", undefined);
+      var ccclass = _decorator.ccclass;
+      var SFX_NAMES = ['gun', 'jump', 'gem_get', 'gem_warn', 'stomp', 'player_hit', 'death'];
+      function isSfxName(name) {
+        return SFX_NAMES.includes(name);
+      }
+      var AudioManager = exports('AudioManager', (_dec = ccclass('AudioManager'), _dec(_class = /*#__PURE__*/function (_Component) {
+        _inheritsLoose(AudioManager, _Component);
+        function AudioManager() {
+          var _this;
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+          _this = _Component.call.apply(_Component, [this].concat(args)) || this;
+          _this._source = null;
+          _this._clips = new Map();
+          _this._muted = false;
+          _this._lastPlayAt = new Map();
+          return _this;
+        }
+        var _proto = AudioManager.prototype;
+        _proto.onLoad = function onLoad() {
+          var _this2 = this;
+          var source = this.getComponent(AudioSource);
+          if (!source) {
+            source = this.addComponent(AudioSource);
+          }
+          source.playOnAwake = false;
+          source.volume = 1;
+          this._source = source;
+          assetManager.loadBundle('mainui', function (bundleErr, bundle) {
+            if (bundleErr || !bundle) {
+              console.error('[AudioManager] loadBundle failed bundle=mainui', bundleErr);
+              return;
+            }
+            bundle.loadDir('audio', AudioClip, function (loadErr, clips) {
+              if (loadErr || !clips) {
+                console.error('[AudioManager] loadDir failed path=audio', loadErr);
+                return;
+              }
+              for (var _iterator = _createForOfIteratorHelperLoose(clips), _step; !(_step = _iterator()).done;) {
+                var clip = _step.value;
+                var key = clip.name;
+                if (isSfxName(key)) {
+                  _this2._clips.set(key, clip);
+                }
+              }
+            });
+          });
+          if (typeof window !== 'undefined') {
+            window.__dwAudio = this;
+          }
+        };
+        _proto.play = function play(name) {
+          var _this$_lastPlayAt$get;
+          if (!this._source) {
+            return;
+          }
+          var clip = this._clips.get(name);
+          if (!clip) {
+            return;
+          }
+          var now = performance.now();
+          var last = (_this$_lastPlayAt$get = this._lastPlayAt.get(name)) != null ? _this$_lastPlayAt$get : 0;
+          if (now - last < 16) {
+            return;
+          }
+          this._lastPlayAt.set(name, now);
+          this._source.playOneShot(clip, 1);
+        };
+        _proto.setMuted = function setMuted(m) {
+          this._muted = m;
+          if (this._source) {
+            this._source.volume = m ? 0 : 1;
+          }
+        };
+        _createClass(AudioManager, [{
+          key: "muted",
+          get: function get() {
+            return this._muted;
+          }
+        }]);
+        return AudioManager;
+      }(Component)) || _class));
+      cclegacy._RF.pop();
+    }
+  };
+});
+
 System.register("chunks:///_virtual/Bullet.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './TuningConfig.ts', './LevelData.ts'], function (exports) {
   var _inheritsLoose, cclegacy, _decorator, UITransform, Graphics, Color, Component, getTuning, LEVEL_ROWS, LEVEL_GRID, LEVEL_COLS;
   return {
@@ -478,8 +584,8 @@ System.register("chunks:///_virtual/DebugOverlay.ts", ['./rollupPluginModLoBabel
   };
 });
 
-System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './DebugOverlay.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Gunboots.ts', './ChargeBar.ts', './HeartHud.ts', './GameOver.ts', './ScoreHud.ts', './HudFrame.ts', './PlayerHealth.ts'], function (exports) {
-  var _inheritsLoose, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, view, settings, Component, DebugOverlay, FixedStepDriver, getTuning, getTuningSource, BulletPool, Gunboots, ChargeBar, HeartHud, GameOver, ScoreHud, HudFrame, PlayerHealth;
+System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './DebugOverlay.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Gunboots.ts', './ChargeBar.ts', './HeartHud.ts', './GameOver.ts', './ScoreHud.ts', './HudFrame.ts', './PlayerHealth.ts', './AudioManager.ts'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, view, settings, Component, DebugOverlay, FixedStepDriver, getTuning, getTuningSource, BulletPool, Gunboots, ChargeBar, HeartHud, GameOver, ScoreHud, HudFrame, PlayerHealth, AudioManager;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -517,6 +623,8 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
       HudFrame = module.HudFrame;
     }, function (module) {
       PlayerHealth = module.PlayerHealth;
+    }, function (module) {
+      AudioManager = module.AudioManager;
     }],
     execute: function () {
       var _dec, _class;
@@ -579,6 +687,9 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
           var game = find('Game');
           if (game && !game.getComponent(BulletPool)) {
             game.addComponent(BulletPool);
+          }
+          if (game && !game.getComponent(AudioManager)) {
+            game.addComponent(AudioManager);
           }
           var player = find('World/Player');
           if (player && !player.getComponent(Gunboots)) {
@@ -971,8 +1082,8 @@ System.register("chunks:///_virtual/Enemy.ts", ['./rollupPluginModLoBabelHelpers
   };
 });
 
-System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Enemy.ts', './GemManager.ts', './LevelData.ts', './PlayerController.ts', './PlayerHealth.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, FixedStepDriver, getTuning, BulletPool, Enemy, GemManager, PLATFORM_SPECS, platformTopY, LEVEL_ROWS, LEVEL_COLS, LEVEL_GRID, PlayerController, PlayerHealth;
+System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Enemy.ts', './GemManager.ts', './LevelData.ts', './PlayerController.ts', './PlayerHealth.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, AudioManager, FixedStepDriver, getTuning, BulletPool, Enemy, GemManager, PLATFORM_SPECS, platformTopY, LEVEL_ROWS, LEVEL_COLS, LEVEL_GRID, PlayerController, PlayerHealth;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -986,6 +1097,8 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
       instantiate = module.instantiate;
       UITransform = module.UITransform;
       Component = module.Component;
+    }, function (module) {
+      AudioManager = module.AudioManager;
     }, function (module) {
       FixedStepDriver = module.FixedStepDriver;
     }, function (module) {
@@ -1052,11 +1165,14 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
           _this._playerHealth = null;
           _this._gemManager = null;
           _this._gemManagerWarned = false;
+          _this._audio = null;
           return _this;
         }
         var _proto = EnemyManager.prototype;
         _proto.onLoad = function onLoad() {
-          var _this2 = this;
+          var _this2 = this,
+            _find$getComponent,
+            _find;
           this._world = find('World');
           if (!this._world) {
             console.error('[EnemyManager] World node not found');
@@ -1087,6 +1203,7 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
             });
           });
           this._bindStep();
+          this._audio = (_find$getComponent = (_find = find('Game')) == null ? void 0 : _find.getComponent(AudioManager)) != null ? _find$getComponent : null;
           this._gemManager = this.node.getComponent(GemManager);
           if (!this._gemManager) {
             console.error('[EnemyManager] GemManager not found on Game');
@@ -1171,8 +1288,8 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
             }
           }
           if (!this._bulletPool) {
-            var _find$getComponent, _find;
-            this._bulletPool = (_find$getComponent = (_find = find('Game')) == null ? void 0 : _find.getComponent(BulletPool)) != null ? _find$getComponent : null;
+            var _find$getComponent2, _find2;
+            this._bulletPool = (_find$getComponent2 = (_find2 = find('Game')) == null ? void 0 : _find2.getComponent(BulletPool)) != null ? _find$getComponent2 : null;
           }
           var pool = this._bulletPool;
           if (!pool) {
@@ -1212,8 +1329,8 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
             }
           }
           if (!this._playerHealth) {
-            var _find$getComponent2, _find2;
-            this._playerHealth = (_find$getComponent2 = (_find2 = find('World/Player')) == null ? void 0 : _find2.getComponent(PlayerHealth)) != null ? _find$getComponent2 : null;
+            var _find$getComponent3, _find3;
+            this._playerHealth = (_find$getComponent3 = (_find3 = find('World/Player')) == null ? void 0 : _find3.getComponent(PlayerHealth)) != null ? _find$getComponent3 : null;
           }
           var playerHealth = this._playerHealth;
           if (!playerHealth || playerHealth.isDead) {
@@ -1247,9 +1364,11 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
               var _ex = _enemy2.node.position.x;
               var _ey = _enemy2.node.position.y;
               if (Math.abs(_ex - px) < _ehw + phw && Math.abs(_ey - py) < _ehh + phh && playerFootY - _ey > stomp.toleranceY) {
+                var _this$_audio;
                 if (_enemy2.damage(999)) {
                   this._dropGemAndRecycle(_enemy2);
                 }
+                (_this$_audio = this._audio) == null || _this$_audio.play('stomp');
                 playerCtrl.bounceFromStomp();
                 break;
               }
@@ -1576,8 +1695,8 @@ System.register("chunks:///_virtual/GameOver.ts", ['./rollupPluginModLoBabelHelp
   };
 });
 
-System.register("chunks:///_virtual/Gem.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './TuningConfig.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, UITransform, Sprite, Color, assetManager, SpriteFrame, Component, getTuning;
+System.register("chunks:///_virtual/Gem.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './TuningConfig.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, UITransform, Sprite, Color, assetManager, SpriteFrame, Component, AudioManager, getTuning;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -1585,12 +1704,15 @@ System.register("chunks:///_virtual/Gem.ts", ['./rollupPluginModLoBabelHelpers.j
     }, function (module) {
       cclegacy = module.cclegacy;
       _decorator = module._decorator;
+      find = module.find;
       UITransform = module.UITransform;
       Sprite = module.Sprite;
       Color = module.Color;
       assetManager = module.assetManager;
       SpriteFrame = module.SpriteFrame;
       Component = module.Component;
+    }, function (module) {
+      AudioManager = module.AudioManager;
     }, function (module) {
       getTuning = module.getTuning;
     }],
@@ -1618,9 +1740,15 @@ System.register("chunks:///_virtual/Gem.ts", ['./rollupPluginModLoBabelHelpers.j
           _this._framesLoading = false;
           _this._inBlinkZone = false;
           _this._lastBlinkPhase = -1;
+          _this._warnPlayed = false;
+          _this._audio = null;
           return _this;
         }
         var _proto = Gem.prototype;
+        _proto.onLoad = function onLoad() {
+          var _find$getComponent, _find;
+          this._audio = (_find$getComponent = (_find = find('Game')) == null ? void 0 : _find.getComponent(AudioManager)) != null ? _find$getComponent : null;
+        };
         _proto.init = function init(kind, x, y) {
           var tuning = getTuning().gems;
           this._kind = kind;
@@ -1631,6 +1759,7 @@ System.register("chunks:///_virtual/Gem.ts", ['./rollupPluginModLoBabelHelpers.j
           this._animStep = 0;
           this._inBlinkZone = false;
           this._lastBlinkPhase = -1;
+          this._warnPlayed = false;
           this.node.setPosition(x, y);
           this.node.active = true;
           var ut = this.getComponent(UITransform);
@@ -1696,6 +1825,11 @@ System.register("chunks:///_virtual/Gem.ts", ['./rollupPluginModLoBabelHelpers.j
         _proto._updateBlink = function _updateBlink() {
           var blinkSteps = getTuning().gems.blinkSteps;
           var inBlink = this._life <= blinkSteps;
+          if (!this._warnPlayed && inBlink) {
+            var _this$_audio;
+            this._warnPlayed = true;
+            (_this$_audio = this._audio) == null || _this$_audio.play('gem_warn');
+          }
           if (!inBlink) {
             if (this._inBlinkZone && this._sprite) {
               this._sprite.enabled = true;
@@ -1766,8 +1900,8 @@ System.register("chunks:///_virtual/Gem.ts", ['./rollupPluginModLoBabelHelpers.j
   };
 });
 
-System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './TuningConfig.ts', './LevelData.ts', './Gem.ts', './Gunboots.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, FixedStepDriver, getTuning, LEVEL_ROWS, LEVEL_COLS, LEVEL_GRID, Gem, Gunboots;
+System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './FixedStepDriver.ts', './TuningConfig.ts', './LevelData.ts', './Gem.ts', './Gunboots.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, AudioManager, FixedStepDriver, getTuning, LEVEL_ROWS, LEVEL_COLS, LEVEL_GRID, Gem, Gunboots;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -1781,6 +1915,8 @@ System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHe
       instantiate = module.instantiate;
       UITransform = module.UITransform;
       Component = module.Component;
+    }, function (module) {
+      AudioManager = module.AudioManager;
     }, function (module) {
       FixedStepDriver = module.FixedStepDriver;
     }, function (module) {
@@ -1814,6 +1950,7 @@ System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHe
           _this._stepBound = false;
           _this._score = 0;
           _this._gunboots = null;
+          _this._audio = null;
           return _this;
         }
         var _proto = GemManager.prototype;
@@ -1821,7 +1958,9 @@ System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHe
           this._score = 0;
         };
         _proto.onLoad = function onLoad() {
-          var _this2 = this;
+          var _this2 = this,
+            _find$getComponent,
+            _find;
           this._world = find('World');
           if (!this._world) {
             console.error('[GemManager] World node not found');
@@ -1851,6 +1990,7 @@ System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHe
             });
           });
           this._bindStep();
+          this._audio = (_find$getComponent = (_find = find('Game')) == null ? void 0 : _find.getComponent(AudioManager)) != null ? _find$getComponent : null;
           if (typeof window !== 'undefined') {
             window.__dwGems = this;
             window.__dwGemList = this._active;
@@ -1936,8 +2076,9 @@ System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHe
             var gx = _gem.node.position.x;
             var gy = _gem.node.position.y;
             if (Math.abs(gx - px) < ghw + phw && Math.abs(gy - py) < ghh + phh) {
-              var _this$_gunboots;
+              var _this$_audio, _this$_gunboots;
               this._score += _gem.score;
+              (_this$_audio = this._audio) == null || _this$_audio.play('gem_get');
               (_this$_gunboots = this._gunboots) == null || _this$_gunboots.addCharge(chargePerGem);
               this._recycle(_gem);
             }
@@ -1964,8 +2105,8 @@ System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHe
   };
 });
 
-System.register("chunks:///_virtual/Gunboots.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './InputState.ts', './TuningConfig.ts', './BulletPool.ts', './PlayerController.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, find, Component, FixedStepDriver, inputState, getTuning, initTuning, BulletPool, PlayerController;
+System.register("chunks:///_virtual/Gunboots.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './FixedStepDriver.ts', './InputState.ts', './TuningConfig.ts', './BulletPool.ts', './PlayerController.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, Component, AudioManager, FixedStepDriver, inputState, getTuning, initTuning, BulletPool, PlayerController;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -1975,6 +2116,8 @@ System.register("chunks:///_virtual/Gunboots.ts", ['./rollupPluginModLoBabelHelp
       _decorator = module._decorator;
       find = module.find;
       Component = module.Component;
+    }, function (module) {
+      AudioManager = module.AudioManager;
     }, function (module) {
       FixedStepDriver = module.FixedStepDriver;
     }, function (module) {
@@ -2007,11 +2150,14 @@ System.register("chunks:///_virtual/Gunboots.ts", ['./rollupPluginModLoBabelHelp
           _this._stepBound = false;
           _this._player = null;
           _this._pool = null;
+          _this._audio = null;
           return _this;
         }
         var _proto = Gunboots.prototype;
         _proto.onLoad = function onLoad() {
-          var _this2 = this;
+          var _this2 = this,
+            _find$getComponent,
+            _find;
           this._charge = getTuning().gunboots.chargeMax;
           void initTuning().then(function () {
             _this2._charge = getTuning().gunboots.chargeMax;
@@ -2023,6 +2169,7 @@ System.register("chunks:///_virtual/Gunboots.ts", ['./rollupPluginModLoBabelHelp
             this._wasGrounded = this._player.onGround;
           }
           this._bindStep();
+          this._audio = (_find$getComponent = (_find = find('Game')) == null ? void 0 : _find.getComponent(AudioManager)) != null ? _find$getComponent : null;
           if (typeof window !== 'undefined') {
             window.__dwGunboots = this;
           }
@@ -2048,8 +2195,8 @@ System.register("chunks:///_virtual/Gunboots.ts", ['./rollupPluginModLoBabelHelp
         _proto._step = function _step() {
           var _this$_pool;
           if (!this._pool) {
-            var _find$getComponent, _find;
-            this._pool = (_find$getComponent = (_find = find('Game')) == null ? void 0 : _find.getComponent(BulletPool)) != null ? _find$getComponent : null;
+            var _find$getComponent2, _find2;
+            this._pool = (_find$getComponent2 = (_find2 = find('Game')) == null ? void 0 : _find2.getComponent(BulletPool)) != null ? _find$getComponent2 : null;
           }
           var tuning = getTuning();
           var g = tuning.gunboots;
@@ -2067,8 +2214,9 @@ System.register("chunks:///_virtual/Gunboots.ts", ['./rollupPluginModLoBabelHelp
             this._player.firingHeld = fireAllowed;
           }
           if (fireAllowed && this._cooldown <= 0 && this._charge >= g.chargeCostPerShot) {
-            var _this$_player;
+            var _this$_audio, _this$_player;
             this._charge -= g.chargeCostPerShot;
+            (_this$_audio = this._audio) == null || _this$_audio.play('gun');
             this._cooldown = g.fireIntervalSteps;
             this._spawnBullet(g);
             (_this$_player = this._player) == null || _this$_player.applyRecoil(g);
@@ -2845,15 +2993,15 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
   };
 });
 
-System.register("chunks:///_virtual/main", ['./FixedStepDriver.ts', './InputState.ts', './KeyboardInput.ts', './TuningConfig.ts', './ViewBootstrap.ts', './stepAccumulator.ts', './Bullet.ts', './BulletPool.ts', './Enemy.ts', './EnemyManager.ts', './Gem.ts', './GemManager.ts', './Gunboots.ts', './LevelData.ts', './LevelView.ts', './PlayerController.ts', './PlayerHealth.ts', './WorldScroll.ts', './ChargeBar.ts', './DebugOverlay.ts', './DebugOverlayLoader.ts', './GameOver.ts', './HeartHud.ts', './HudFrame.ts', './ScoreHud.ts', './TouchControls.ts', './TouchPad.ts'], function () {
+System.register("chunks:///_virtual/main", ['./AudioManager.ts', './FixedStepDriver.ts', './InputState.ts', './KeyboardInput.ts', './TuningConfig.ts', './ViewBootstrap.ts', './stepAccumulator.ts', './Bullet.ts', './BulletPool.ts', './Enemy.ts', './EnemyManager.ts', './Gem.ts', './GemManager.ts', './Gunboots.ts', './LevelData.ts', './LevelView.ts', './PlayerController.ts', './PlayerHealth.ts', './WorldScroll.ts', './ChargeBar.ts', './DebugOverlay.ts', './DebugOverlayLoader.ts', './GameOver.ts', './HeartHud.ts', './HudFrame.ts', './ScoreHud.ts', './TouchControls.ts', './TouchPad.ts'], function () {
   return {
-    setters: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+    setters: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
     execute: function () {}
   };
 });
 
-System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './InputState.ts', './TuningConfig.ts', './LevelData.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, Sprite, find, assetManager, SpriteFrame, UITransform, Component, FixedStepDriver, inputState, initTuning, getTuning, SPAWN_POS, LEVEL_GRID, LEVEL_COLS, LEVEL_ROWS;
+System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './FixedStepDriver.ts', './InputState.ts', './TuningConfig.ts', './LevelData.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, Sprite, find, assetManager, SpriteFrame, UITransform, Component, AudioManager, FixedStepDriver, inputState, initTuning, getTuning, SPAWN_POS, LEVEL_GRID, LEVEL_COLS, LEVEL_ROWS;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -2867,6 +3015,8 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
       SpriteFrame = module.SpriteFrame;
       UITransform = module.UITransform;
       Component = module.Component;
+    }, function (module) {
+      AudioManager = module.AudioManager;
     }, function (module) {
       FixedStepDriver = module.FixedStepDriver;
     }, function (module) {
@@ -2906,10 +3056,12 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           _this.firingHeld = false;
           _this.controlsLocked = false;
           _this._knockbackSteps = 0;
+          _this._audio = null;
           return _this;
         }
         var _proto = PlayerController.prototype;
         _proto.onLoad = function onLoad() {
+          var _find$getComponent, _find;
           void initTuning();
           this._x = SPAWN_POS.x;
           this._y = SPAWN_POS.y;
@@ -2917,6 +3069,7 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           this.node.setPosition(this._x, this._y);
           this._sprite = this.getComponent(Sprite);
           this._loadPlayerSprites();
+          this._audio = (_find$getComponent = (_find = find('Game')) == null ? void 0 : _find.getComponent(AudioManager)) != null ? _find$getComponent : null;
           if (typeof window !== 'undefined') {
             window.__dwPlayer = this;
           }
@@ -3020,8 +3173,10 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
             this._vy = -fallCap;
           }
           if (!this.controlsLocked && inputState.jumpPressed && this._onGround) {
+            var _this$_audio;
             this._vy = player.jumpInitialSpeed;
             this._onGround = false;
+            (_this$_audio = this._audio) == null || _this$_audio.play('jump');
           }
           if (!this.controlsLocked && !inputState.jumpHeld && this._vy > 0 && player.jumpReleaseMode === 'cut') {
             this._vy = 0;
@@ -3226,8 +3381,8 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
   };
 });
 
-System.register("chunks:///_virtual/PlayerHealth.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './TuningConfig.ts', './PlayerController.ts', './GameOver.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, Sprite, find, Component, FixedStepDriver, initTuning, getTuning, PlayerController, GameOver;
+System.register("chunks:///_virtual/PlayerHealth.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './FixedStepDriver.ts', './TuningConfig.ts', './PlayerController.ts', './GameOver.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, Sprite, find, Component, AudioManager, FixedStepDriver, initTuning, getTuning, PlayerController, GameOver;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -3238,6 +3393,8 @@ System.register("chunks:///_virtual/PlayerHealth.ts", ['./rollupPluginModLoBabel
       Sprite = module.Sprite;
       find = module.find;
       Component = module.Component;
+    }, function (module) {
+      AudioManager = module.AudioManager;
     }, function (module) {
       FixedStepDriver = module.FixedStepDriver;
     }, function (module) {
@@ -3266,14 +3423,17 @@ System.register("chunks:///_virtual/PlayerHealth.ts", ['./rollupPluginModLoBabel
           _this._stepBound = false;
           _this._sprite = null;
           _this._spriteFlashOn = true;
+          _this._audio = null;
           return _this;
         }
         var _proto = PlayerHealth.prototype;
         _proto.onLoad = function onLoad() {
+          var _find$getComponent, _find;
           void initTuning();
           this._hp = this.maxHp;
           this.invulnLeft = 0;
           this._sprite = this.getComponent(Sprite);
+          this._audio = (_find$getComponent = (_find = find('Game')) == null ? void 0 : _find.getComponent(AudioManager)) != null ? _find$getComponent : null;
           if (typeof window !== 'undefined') {
             window.__dwHealth = this;
           }
@@ -3282,22 +3442,24 @@ System.register("chunks:///_virtual/PlayerHealth.ts", ['./rollupPluginModLoBabel
           this._bindStep();
         };
         _proto.takeDamage = function takeDamage(n, fromX) {
-          var _find;
+          var _this$_audio, _find2;
           if (this.invulnLeft > 0 || this.isDead) {
             return false;
           }
           this._hp -= n;
+          (_this$_audio = this._audio) == null || _this$_audio.play('player_hit');
           this.invulnLeft = getTuning().health.invulnSteps;
-          var ctrl = (_find = find('World/Player')) == null ? void 0 : _find.getComponent(PlayerController);
+          var ctrl = (_find2 = find('World/Player')) == null ? void 0 : _find2.getComponent(PlayerController);
           ctrl == null || ctrl.applyHurtKnockback(fromX);
           if (this._hp <= 0) {
-            var _find2;
+            var _this$_audio2, _find3;
             this._dead = true;
+            (_this$_audio2 = this._audio) == null || _this$_audio2.play('death');
             console.log('[PlayerHealth] dead hp=' + this._hp);
             if (ctrl) {
               ctrl.controlsLocked = true;
             }
-            (_find2 = find('Canvas/GameOver')) == null || (_find2 = _find2.getComponent(GameOver)) == null || _find2.show();
+            (_find3 = find('Canvas/GameOver')) == null || (_find3 = _find3.getComponent(GameOver)) == null || _find3.show();
           }
           return true;
         };
