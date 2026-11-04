@@ -2438,7 +2438,7 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
       /** 手摆竖井：16px 格（sprTile1），10 列 × 53 行 = 848px 高，与旧 106×8 同高。 */
       var LEVEL_COLS = exports('LEVEL_COLS', 10);
       var LEVEL_ROWS = exports('LEVEL_ROWS', 53);
-      var TILE_PX = 16;
+      var LEVEL_TILE_PX = exports('LEVEL_TILE_PX', 16);
       var WALL_THICKNESS = 2;
       var FLOOR_START_ROW = 50;
       var PLAYABLE_COL0 = WALL_THICKNESS;
@@ -2503,10 +2503,10 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
       }]);
 
       /**
-       * 平台顶面 y：第 R 行格子占 y ∈ [-(R+1)*TILE_PX, -R*TILE_PX]，顶边为 -R*TILE_PX。
+       * 平台顶面 y：第 R 行格子占 y ∈ [-(R+1)*LEVEL_TILE_PX, -R*LEVEL_TILE_PX]，顶边为 -R*LEVEL_TILE_PX。
        */
       function platformTopY(spec) {
-        return -spec.row * TILE_PX;
+        return -spec.row * LEVEL_TILE_PX;
       }
       function applyPlatformSpec(grid, spec) {
         for (var i = 0; i < spec.len; i++) {
@@ -2553,8 +2553,8 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
         return best;
       }
       function assertLevel() {
-        var spawnCol = Math.floor(SPAWN_POS.x / TILE_PX);
-        var spawnRow = Math.floor(-SPAWN_POS.y / TILE_PX);
+        var spawnCol = Math.floor(SPAWN_POS.x / LEVEL_TILE_PX);
+        var spawnRow = Math.floor(-SPAWN_POS.y / LEVEL_TILE_PX);
         if (spawnRow < 0 || spawnRow >= LEVEL_ROWS || spawnCol < 0 || spawnCol >= LEVEL_COLS) {
           console.error("[LevelData] spawn out of bounds at row " + spawnRow + " col " + spawnCol);
         } else if (LEVEL_GRID[spawnRow][spawnCol] === 1) {
@@ -2587,8 +2587,8 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
   };
 });
 
-System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './TuningConfig.ts', './LevelData.ts'], function (exports) {
-  var _inheritsLoose, cclegacy, _decorator, Graphics, assetManager, Prefab, instantiate, Sprite, Color, SpriteFrame, Component, getTuning, assertLevel, LEVEL_GRID;
+System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './LevelData.ts'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, Graphics, assetManager, Prefab, instantiate, Sprite, Color, SpriteFrame, Component, assertLevel, LEVEL_GRID, LEVEL_TILE_PX;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -2604,10 +2604,9 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
       SpriteFrame = module.SpriteFrame;
       Component = module.Component;
     }, function (module) {
-      getTuning = module.getTuning;
-    }, function (module) {
       assertLevel = module.assertLevel;
       LEVEL_GRID = module.LEVEL_GRID;
+      LEVEL_TILE_PX = module.LEVEL_TILE_PX;
     }],
     execute: function () {
       var _dec, _class;
@@ -2627,7 +2626,9 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
             graphics.enabled = false;
           }
           window.__dwTiles = this.node;
-          var tileSize = getTuning().level.tileSize;
+
+          // 网格尺寸须与 LEVEL_GRID 一致，为编译时常量；不能读 getTuning（fetch 完成前为旧默认 8）。
+          var tileSize = LEVEL_TILE_PX;
           assetManager.loadBundle('mainui', function (bundleErr, bundle) {
             if (bundleErr || !bundle) {
               console.error('[LevelView] tile prefab/frames load failed: ' + bundleErr);
@@ -3682,9 +3683,9 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
           jumpReleaseMode: 'cut'
         },
         level: {
-          tileSize: 8,
-          wellWidthTiles: 20,
-          wallThicknessTiles: 4
+          tileSize: 16,
+          wellWidthTiles: 10,
+          wallThicknessTiles: 2
         },
         gunboots: {
           fireIntervalSteps: 8,
