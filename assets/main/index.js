@@ -465,14 +465,17 @@ System.register("chunks:///_virtual/ComboHud.ts", ['./rollupPluginModLoBabelHelp
           _this = _Component.call.apply(_Component, [this].concat(args)) || this;
           _this._label = null;
           _this._labelNode = null;
+          _this._bodyNode = null;
           _this._lastCount = -1;
           _this._breakPending = false;
           return _this;
         }
         var _proto = ComboHud.prototype;
         _proto.onLoad = function onLoad() {
-          var _child$getComponent;
-          var child = this.node.getChildByName('Label');
+          var _this$_bodyNode, _child$getComponent;
+          this._bodyNode = this.node.getChildByName('Body');
+          var labelRoot = (_this$_bodyNode = this._bodyNode) != null ? _this$_bodyNode : this.node;
+          var child = labelRoot.getChildByName('Label');
           this._labelNode = child;
           this._label = (_child$getComponent = child == null ? void 0 : child.getComponent(Label)) != null ? _child$getComponent : null;
           if (typeof window !== 'undefined') {
@@ -484,8 +487,23 @@ System.register("chunks:///_virtual/ComboHud.ts", ['./rollupPluginModLoBabelHelp
             _this2 = this;
           var combo = (_find = find('Game')) == null ? void 0 : _find.getComponent(ComboTracker);
           if (!combo) {
-            this.node.active = false;
+            if (this._bodyNode) {
+              this._bodyNode.active = false;
+            }
             return;
+          }
+          var minForTip = getTuning().combo.minForTip;
+          var count = combo.count;
+          var show = count >= minForTip;
+          if (this._bodyNode) {
+            this._bodyNode.active = show;
+          }
+          if (show && count !== this._lastCount && this._label) {
+            this._lastCount = count;
+            this._label.string = "x" + count;
+          }
+          if (!show) {
+            this._lastCount = -1;
           }
           if (combo.justBroke && !this._breakPending) {
             this._breakPending = true;
@@ -506,18 +524,6 @@ System.register("chunks:///_virtual/ComboHud.ts", ['./rollupPluginModLoBabelHelp
               _this2._breakPending = false;
             }, 0.25);
           }
-          var minForTip = getTuning().combo.minForTip;
-          var count = combo.count;
-          if (count < minForTip) {
-            this.node.active = false;
-            this._lastCount = -1;
-            return;
-          }
-          this.node.active = true;
-          if (count !== this._lastCount && this._label) {
-            this._lastCount = count;
-            this._label.string = "x" + count;
-          }
         };
         return ComboHud;
       }(Component)) || _class));
@@ -526,8 +532,8 @@ System.register("chunks:///_virtual/ComboHud.ts", ['./rollupPluginModLoBabelHelp
   };
 });
 
-System.register("chunks:///_virtual/ComboTracker.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './TuningConfig.ts', './GemManager.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, find, Component, FixedStepDriver, getTuning, GemManager;
+System.register("chunks:///_virtual/ComboTracker.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './TuningConfig.ts', './GemManager.ts', './PlayerController.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, Component, FixedStepDriver, getTuning, GemManager, PlayerController;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -543,6 +549,8 @@ System.register("chunks:///_virtual/ComboTracker.ts", ['./rollupPluginModLoBabel
       getTuning = module.getTuning;
     }, function (module) {
       GemManager = module.GemManager;
+    }, function (module) {
+      PlayerController = module.PlayerController;
     }],
     execute: function () {
       var _dec, _class;
@@ -562,6 +570,9 @@ System.register("chunks:///_virtual/ComboTracker.ts", ['./rollupPluginModLoBabel
           _this._brokeAt = 0;
           _this._stepBound = false;
           _this._gemManager = null;
+          _this._gemManagerWarned = false;
+          _this._playerWarned = false;
+          _this._rewardKindLogged = false;
           return _this;
         }
         var _proto = ComboTracker.prototype;
@@ -570,6 +581,14 @@ System.register("chunks:///_virtual/ComboTracker.ts", ['./rollupPluginModLoBabel
         };
         _proto.onLoad = function onLoad() {
           this._gemManager = this.node.getComponent(GemManager);
+          if (!this._gemManager) {
+            var _find$getComponent, _find;
+            this._gemManager = (_find$getComponent = (_find = find('Game')) == null ? void 0 : _find.getComponent(GemManager)) != null ? _find$getComponent : null;
+          }
+          if (!this._gemManager && !this._gemManagerWarned) {
+            console.error('[ComboTracker] GemManager not found');
+            this._gemManagerWarned = true;
+          }
           this._bindStep();
           if (typeof window !== 'undefined') {
             window.__dwCombo = this;
@@ -579,8 +598,14 @@ System.register("chunks:///_virtual/ComboTracker.ts", ['./rollupPluginModLoBabel
           var combo = getTuning().combo;
           this._count += 1;
           this._timer = combo.windowSteps;
-          if (this._count % combo.rewardEvery === 0) {
-            this._spawnReward(combo.rewardKind);
+          var rewardEvery = combo.rewardEvery;
+          if (rewardEvery > 0 && this._count % rewardEvery === 0) {
+            var rewardKind = String(combo.rewardKind).trim();
+            if (!this._rewardKindLogged && typeof console !== 'undefined') {
+              console.log('[ComboTracker] rewardKind=', JSON.stringify(rewardKind));
+              this._rewardKindLogged = true;
+            }
+            this._spawnReward(rewardKind);
           }
         };
         _proto.onPlayerHurt = function onPlayerHurt() {
@@ -605,15 +630,33 @@ System.register("chunks:///_virtual/ComboTracker.ts", ['./rollupPluginModLoBabel
           }
         };
         _proto._spawnReward = function _spawnReward(kind) {
+          var _find3;
           if (!this._gemManager) {
             this._gemManager = this.node.getComponent(GemManager);
           }
-          var player = find('World/Player');
-          if (!this._gemManager || !player) {
+          if (!this._gemManager) {
+            var _find$getComponent2, _find2;
+            this._gemManager = (_find$getComponent2 = (_find2 = find('Game')) == null ? void 0 : _find2.getComponent(GemManager)) != null ? _find$getComponent2 : null;
+          }
+          if (!this._gemManager) {
+            if (!this._gemManagerWarned) {
+              console.error('[ComboTracker] GemManager not found');
+              this._gemManagerWarned = true;
+            }
             return;
           }
-          var gemKind = kind === 'medium' ? 'medium' : 'small';
-          this._gemManager.spawnAt(gemKind, player.position.x, player.position.y);
+          var player = (_find3 = find('World/Player')) == null ? void 0 : _find3.getComponent(PlayerController);
+          if (!player) {
+            if (!this._playerWarned) {
+              console.error('[ComboTracker] PlayerController not found on World/Player');
+              this._playerWarned = true;
+            }
+            return;
+          }
+          var pos = player.position;
+          var normalized = kind.trim();
+          var gemKind = normalized === 'medium' ? 'medium' : 'small';
+          this._gemManager.spawnAt(gemKind, pos.x, pos.y);
         };
         _proto._bindStep = function _bindStep() {
           var _this2 = this;
