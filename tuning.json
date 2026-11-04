@@ -1,5 +1,5 @@
 {
-  "meta": { "version": "0.5.0", "date": "2026-11-04" },
+  "meta": { "version": "0.6.0", "date": "2026-11-04" },
   "loop": {
     "fixedStepHz":   { "value": 60, "version": "0.1.0", "date": "2026-11-04", "why": "DW-01 实录：18 个房间 speed 全为 60" },
     "maxCatchUpSteps": { "value": 5, "version": "0.1.0", "date": "2026-11-04", "why": "防后台切回时补步雪崩" }
@@ -20,9 +20,9 @@
     "jumpReleaseMode":   { "value": "cut",   "version": "0.2.0", "date": "2026-11-04", "why": "松键即把上升速度归零（拍板项③：马里奥式截断）" }
   },
   "level": {
-    "tileSize":            { "value": 8, "version": "0.2.0", "date": "2026-11-04", "why": "DW-13：8px grid" },
-    "wellWidthTiles":      { "value": 20, "version": "0.2.0", "date": "2026-11-04", "why": "160px / 8 = 20 格；两侧各 4 格墙 → 可活动区 12 格 = 96px" },
-    "wallThicknessTiles":  { "value": 4, "version": "0.2.0", "date": "2026-11-04", "why": "墙厚 32px，视觉上像竖井井壁" }
+    "tileSize":            { "value": 16, "version": "0.6.0", "date": "2026-11-04", "why": "原作 sprTile1 是 16x16（DW-07 实录），8px 格子铺不上；改后可玩区仍 96px 宽，手感不变" },
+    "wellWidthTiles":      { "value": 10, "version": "0.6.0", "date": "2026-11-04", "why": "160px / 16px = 10 列" },
+    "wallThicknessTiles":  { "value": 2,  "version": "0.6.0", "date": "2026-11-04", "why": "墙 2 格 = 32px，可玩区 col2..7 = 96px（与原 12 格 x 8px 一致）" }
   },
   "gunboots": {
     "fireIntervalSteps":   { "value": 8,     "version": "0.3.0", "date": "2026-11-04", "why": "60 步/秒 ÷ 8 = 7.5 发/秒，DW-02 只给了 scrBurstFire 一个符号，射速取这个量级" },

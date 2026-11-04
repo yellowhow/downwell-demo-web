@@ -1002,8 +1002,9 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
         throw new Error("[EnemyManager] no left/right platform at or after index " + index);
       }
       function snailSpawnFromSpec(spec) {
-        var x = spec.col0 * 8 + spec.len * 8 / 2;
-        var y = platformTopY(spec) + 16;
+        var tileSize = getTuning().level.tileSize;
+        var x = spec.col0 * tileSize + spec.len * tileSize / 2;
+        var y = platformTopY(spec) + tileSize;
         return {
           x: x,
           y: y
@@ -1090,7 +1091,7 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
           this._stepBound = true;
         }
 
-        // 约束：蜗牛必须站在 left/right 平台中心；蝙蝠悬在平台行之间的空档（y = -row*8-4），
+        // 约束：蜗牛必须站在 left/right 平台中心；蝙蝠悬在平台行之间的空档（y = -row*16-8），
         // 横向 x 左右交替，避免开局落体路径上必然碰撞。
         ;
 
@@ -1098,11 +1099,11 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
           if (!this._poolReady) {
             return;
           }
-          var batRows = [13, 27, 41, 55];
+          var batRows = [8, 12, 16, 20];
           var batXs = [60, 100, 58, 102];
           for (var i = 0; i < batRows.length; i += 1) {
             var row = batRows[i];
-            this._spawnOne('bat', batXs[i], -row * 8 - 4, 1);
+            this._spawnOne('bat', batXs[i], -row * 16 - 8, 1);
           }
           var snailIndices = [3, 8, 12];
           for (var _i = 0, _snailIndices = snailIndices; _i < _snailIndices.length; _i++) {
@@ -2434,81 +2435,71 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
         platformTopY: platformTopY
       });
       cclegacy._RF.push({}, "e7c3dkaK09OCJxtGlt+DyxI", "LevelData", undefined);
-      /** 手摆 3 屏竖井。格子边长按 DW-13 写成 8px；总高 852px = 106.5 格，上限取 106 格。 */
-      var LEVEL_COLS = exports('LEVEL_COLS', 20);
-      var LEVEL_ROWS = exports('LEVEL_ROWS', 106);
-      var TILE_PX = 8;
-      var WALL_THICKNESS = 4;
-      var FLOOR_START_ROW = 100;
+      /** 手摆竖井：16px 格（sprTile1），10 列 × 53 行 = 848px 高，与旧 106×8 同高。 */
+      var LEVEL_COLS = exports('LEVEL_COLS', 10);
+      var LEVEL_ROWS = exports('LEVEL_ROWS', 53);
+      var TILE_PX = 16;
+      var WALL_THICKNESS = 2;
+      var FLOOR_START_ROW = 50;
       var PLAYABLE_COL0 = WALL_THICKNESS;
-      var PLAYABLE_COL1 = LEVEL_COLS - WALL_THICKNESS - 1; // 15
+      var PLAYABLE_COL1 = LEVEL_COLS - WALL_THICKNESS - 1; // 7
 
-      /** 13 层落脚平台：行距 7 行，侧别 left → right → middle 循环。 */
+      /** 11 层落脚平台：行距 4 行（64px），侧别 left → right → middle 循环。 */
       var PLATFORM_SPECS = exports('PLATFORM_SPECS', [{
-        row: 10,
+        row: 6,
         side: 'left',
-        col0: 4,
-        len: 5
-      }, {
-        row: 17,
-        side: 'right',
-        col0: 11,
-        len: 5
-      }, {
-        row: 24,
-        side: 'middle',
-        col0: 9,
+        col0: 2,
         len: 3
       }, {
-        row: 31,
-        side: 'left',
+        row: 10,
+        side: 'right',
+        col0: 5,
+        len: 3
+      }, {
+        row: 14,
+        side: 'middle',
         col0: 4,
-        len: 5
+        len: 2
+      }, {
+        row: 18,
+        side: 'left',
+        col0: 2,
+        len: 3
+      }, {
+        row: 22,
+        side: 'right',
+        col0: 5,
+        len: 3
+      }, {
+        row: 26,
+        side: 'middle',
+        col0: 4,
+        len: 2
+      }, {
+        row: 30,
+        side: 'left',
+        col0: 2,
+        len: 3
+      }, {
+        row: 34,
+        side: 'right',
+        col0: 5,
+        len: 3
       }, {
         row: 38,
-        side: 'right',
-        col0: 11,
-        len: 5
-      }, {
-        row: 45,
         side: 'middle',
-        col0: 9,
+        col0: 4,
+        len: 2
+      }, {
+        row: 42,
+        side: 'left',
+        col0: 2,
         len: 3
       }, {
-        row: 52,
-        side: 'left',
-        col0: 4,
-        len: 5
-      }, {
-        row: 59,
+        row: 46,
         side: 'right',
-        col0: 11,
-        len: 5
-      }, {
-        row: 66,
-        side: 'middle',
-        col0: 9,
+        col0: 5,
         len: 3
-      }, {
-        row: 73,
-        side: 'left',
-        col0: 4,
-        len: 5
-      }, {
-        row: 80,
-        side: 'right',
-        col0: 11,
-        len: 5
-      }, {
-        row: 87,
-        side: 'middle',
-        col0: 9,
-        len: 3
-      }, {
-        row: 94,
-        side: 'left',
-        col0: 4,
-        len: 5
       }]);
 
       /**
@@ -2541,10 +2532,10 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
       }
       var LEVEL_GRID = exports('LEVEL_GRID', buildLevelGrid());
 
-      /** 出生点：第 4 行、水平居中。坐标原点在井顶左上角，y 向下为负。 */
+      /** 出生点：第 2 行、水平居中。坐标原点在井顶左上角，y 向下为负。 */
       var SPAWN_POS = exports('SPAWN_POS', {
-        x: LEVEL_COLS * TILE_PX / 2,
-        y: -4 * TILE_PX
+        x: 80,
+        y: -32
       });
       function maxConsecutiveEmptyInPlayable(row) {
         var best = 0;
@@ -2569,17 +2560,17 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
         } else if (LEVEL_GRID[spawnRow][spawnCol] === 1) {
           console.error("[LevelData] spawn sits in solid at row " + spawnRow + " col " + spawnCol);
         }
-        for (var row = 0; row <= 9; row++) {
+        for (var row = 0; row <= 5; row++) {
           for (var col = PLAYABLE_COL0; col <= PLAYABLE_COL1; col++) {
             if (LEVEL_GRID[row][col] === 1) {
-              console.error("[LevelData] row 0~9 must be empty in playable cols; solid at row " + row + " col " + col);
+              console.error("[LevelData] row 0~5 must be empty in playable cols; solid at row " + row + " col " + col);
             }
           }
         }
         for (var _row = 0; _row < FLOOR_START_ROW; _row++) {
           var maxEmpty = maxConsecutiveEmptyInPlayable(LEVEL_GRID[_row]);
-          if (maxEmpty < 4) {
-            console.error("[LevelData] row " + _row + " has no run of 4+ consecutive empty tiles in playable cols (max=" + maxEmpty + ")");
+          if (maxEmpty < 2) {
+            console.error("[LevelData] row " + _row + " has no run of 2+ consecutive empty tiles in playable cols (max=" + maxEmpty + ")");
           }
         }
         for (var _iterator = _createForOfIteratorHelperLoose(PLATFORM_SPECS), _step; !(_step = _iterator()).done;) {
@@ -2597,7 +2588,7 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
 });
 
 System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './TuningConfig.ts', './LevelData.ts'], function (exports) {
-  var _inheritsLoose, cclegacy, _decorator, Graphics, Color, Component, getTuning, assertLevel, LEVEL_GRID;
+  var _inheritsLoose, cclegacy, _decorator, Graphics, assetManager, Prefab, instantiate, Sprite, Color, SpriteFrame, Component, getTuning, assertLevel, LEVEL_GRID;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -2605,7 +2596,12 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
       cclegacy = module.cclegacy;
       _decorator = module._decorator;
       Graphics = module.Graphics;
+      assetManager = module.assetManager;
+      Prefab = module.Prefab;
+      instantiate = module.instantiate;
+      Sprite = module.Sprite;
       Color = module.Color;
+      SpriteFrame = module.SpriteFrame;
       Component = module.Component;
     }, function (module) {
       getTuning = module.getTuning;
@@ -2624,21 +2620,71 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
         }
         var _proto = LevelView.prototype;
         _proto.onLoad = function onLoad() {
+          var _this = this;
           assertLevel();
           var graphics = this.getComponent(Graphics);
-          if (!graphics) {
-            console.error('[LevelView] Graphics component missing on Level');
-            return;
+          if (graphics) {
+            graphics.enabled = false;
           }
+          window.__dwTiles = this.node;
           var tileSize = getTuning().level.tileSize;
-          graphics.fillColor = new Color(0x3a, 0x3a, 0x44, 255);
-          for (var row = 0; row < LEVEL_GRID.length; row++) {
+          assetManager.loadBundle('mainui', function (bundleErr, bundle) {
+            if (bundleErr || !bundle) {
+              console.error('[LevelView] tile prefab/frames load failed: ' + bundleErr);
+              return;
+            }
+            bundle.load('prefab/Tile', Prefab, function (prefabErr, tilePrefab) {
+              if (prefabErr || !tilePrefab) {
+                console.error('[LevelView] tile prefab/frames load failed: ' + prefabErr);
+                return;
+              }
+              var pending = 8;
+              var frames = new Array(8).fill(null);
+              var frameLoadErr = null;
+              var _loop = function _loop(i) {
+                var path = "sprite/tile/tile_" + String(i).padStart(2, '0') + "/spriteFrame";
+                bundle.load(path, SpriteFrame, function (loadErr, frame) {
+                  if (loadErr || !frame) {
+                    frameLoadErr = loadErr != null ? loadErr : "missing " + path;
+                  } else {
+                    frames[i] = frame;
+                  }
+                  pending -= 1;
+                  if (pending === 0) {
+                    if (frameLoadErr || frames.some(function (f) {
+                      return !f;
+                    })) {
+                      console.error('[LevelView] tile prefab/frames load failed: ' + frameLoadErr);
+                      return;
+                    }
+                    _this._buildTileSprites(tilePrefab, frames, tileSize);
+                  }
+                });
+              };
+              for (var i = 0; i < 8; i += 1) {
+                _loop(i);
+              }
+            });
+          });
+        };
+        _proto._buildTileSprites = function _buildTileSprites(tilePrefab, frames, tileSize) {
+          var half = tileSize / 2;
+          for (var row = 0; row < LEVEL_GRID.length; row += 1) {
             var cells = LEVEL_GRID[row];
-            for (var col = 0; col < cells.length; col++) {
+            for (var col = 0; col < cells.length; col += 1) {
               if (cells[col] !== 1) {
                 continue;
               }
-              graphics.fillRect(col * tileSize, -row * tileSize, tileSize, -tileSize);
+              var node = instantiate(tilePrefab);
+              this.node.addChild(node);
+              node.setPosition(col * tileSize + half, -row * tileSize - half);
+              var sprite = node.getComponent(Sprite);
+              if (!sprite) {
+                continue;
+              }
+              var frameIndex = (row * 31 + col * 17) % 8;
+              sprite.spriteFrame = frames[frameIndex];
+              sprite.color = new Color(0x3a, 0x3a, 0x48, 255);
             }
           }
         };
