@@ -3283,7 +3283,8 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
               }
               var frameIndex = (row * 31 + col * 17) % 8;
               sprite.spriteFrame = frames[frameIndex];
-              sprite.color = new Color(0x3a, 0x3a, 0x48, 255);
+              // 贴图已含成品色（暗 44/44/58、亮 108/108/128）；Sprite.color 为乘法 tint，再乘会二次压暗，故用纯白
+              sprite.color = new Color(0xff, 0xff, 0xff, 255);
             }
           }
         };
