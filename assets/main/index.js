@@ -4046,16 +4046,13 @@ System.register("chunks:///_virtual/TouchControls.ts", ['./rollupPluginModLoBabe
       var ccclass = _decorator.ccclass;
       var BUTTON_MAP = [{
         path: 'BtnLeft',
-        button: 'left'
+        buttons: ['left']
       }, {
         path: 'BtnRight',
-        button: 'right'
+        buttons: ['right']
       }, {
-        path: 'BtnFire',
-        button: 'fire'
-      }, {
-        path: 'BtnJump',
-        button: 'jump'
+        path: 'BtnAction',
+        buttons: ['jump', 'fire']
       }];
       var TouchControls = exports('TouchControls', (_dec = ccclass('TouchControls'), _dec(_class = /*#__PURE__*/function (_Component) {
         _inheritsLoose(TouchControls, _Component);
@@ -4072,22 +4069,36 @@ System.register("chunks:///_virtual/TouchControls.ts", ['./rollupPluginModLoBabe
         }
         var _proto = TouchControls.prototype;
         _proto.onLoad = function onLoad() {
+          var drawn = new Set();
           for (var _i = 0, _BUTTON_MAP = BUTTON_MAP; _i < _BUTTON_MAP.length; _i++) {
             var _BUTTON_MAP$_i = _BUTTON_MAP[_i],
               path = _BUTTON_MAP$_i.path,
-              button = _BUTTON_MAP$_i.button;
+              buttons = _BUTTON_MAP$_i.buttons;
             var node = this.node.getChildByPath(path);
             if (!node) {
               console.error("[TouchControls] missing child path=" + path);
               continue;
             }
-            this._buttonNodes.set(button, node);
-            this._drawButtonGraphics(node);
+            for (var _iterator = _createForOfIteratorHelperLoose(buttons), _step; !(_step = _iterator()).done;) {
+              var button = _step.value;
+              this._buttonNodes.set(button, node);
+            }
+            if (!drawn.has(node)) {
+              drawn.add(node);
+              this._drawButtonGraphics(node);
+            }
           }
         };
         _proto.onDisable = function onDisable() {
-          for (var _iterator = _createForOfIteratorHelperLoose(this._buttonNodes.keys()), _step; !(_step = _iterator()).done;) {
-            var button = _step.value;
+          var released = new Set();
+          for (var _iterator2 = _createForOfIteratorHelperLoose(this._buttonNodes), _step2; !(_step2 = _iterator2()).done;) {
+            var _step2$value = _step2.value,
+              button = _step2$value[0],
+              node = _step2$value[1];
+            if (released.has(node)) {
+              continue;
+            }
+            released.add(node);
             this.setPressed(button, false);
           }
           inputState.reset();
@@ -4394,7 +4405,7 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
       /** tuning.json 里每个可调参数的包装结构；运行时只取 value。 */
       /** 摊平后的运行时配置：只保留 value。 */
       var FETCH_TIMEOUT_MS = 2000;
-      var TUNING_URL = 'tuning.json';
+      var TUNING_URL = 'tuning.json?v=' + Date.now();
       var DEFAULT_TUNING = {
         loop: {
           fixedStepHz: 60,
