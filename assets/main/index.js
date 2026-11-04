@@ -1067,12 +1067,21 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
             }
           });
           this._stepBound = true;
-        };
+        }
+
+        // 约束：出生列 x=80，蝙蝠横向必须离它 ≥36px（玩家半宽12 + 蝙蝠半宽12 + 12 余量），
+        // 否则开局自由落体时会被必然命中（实测曾一进游戏 4 心 → 1 心）。
+        ;
+
         _proto._spawnInitial = function _spawnInitial() {
           if (!this._poolReady) {
             return;
           }
-          for (var i = 0; i < INITIAL_SPAWNS.length; i += 1) {
+          this._spawnOne('bat', 46, -155, 1);
+          this._spawnOne('bat', 114, -300, 1);
+          this._spawnOne('bat', 50, -460, 1);
+          this._spawnOne('bat', 110, -620, 1);
+          for (var i = 4; i < INITIAL_SPAWNS.length; i += 1) {
             var s = INITIAL_SPAWNS[i];
             this._spawnOne(s.kind, s.x, s.y, s.hp);
           }
