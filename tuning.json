@@ -1,5 +1,5 @@
 {
-  "meta": { "version": "0.9.6", "date": "2026-11-05" },
+  "meta": { "version": "0.9.8", "date": "2026-11-05" },
   "loop": {
     "fixedStepHz":   { "value": 60, "version": "0.1.0", "date": "2026-11-04", "why": "DW-01 实录：18 个房间 speed 全为 60" },
     "maxCatchUpSteps": { "value": 5, "version": "0.1.0", "date": "2026-11-04", "why": "防后台切回时补步雪崩" }
@@ -33,7 +33,8 @@
   "level": {
     "tileSize":            { "value": 16, "version": "0.6.0", "date": "2026-11-04", "why": "原作 sprTile1 是 16x16（DW-07 实录），8px 格子铺不上；改后可玩区仍 96px 宽，手感不变" },
     "wellWidthTiles":      { "value": 10, "version": "0.6.0", "date": "2026-11-04", "why": "160px / 16px = 10 列" },
-    "wallThicknessTiles":  { "value": 2,  "version": "0.6.0", "date": "2026-11-04", "why": "墙 2 格 = 32px，可玩区 col2..7 = 96px（与原 12 格 x 8px 一致）" }
+    "wallThicknessTiles":  { "value": 2,  "version": "0.6.0", "date": "2026-11-04", "why": "墙 2 格 = 32px，可玩区 col2..7 = 96px（与原 12 格 x 8px 一致）" },
+    "cullMarginPx":        { "value": 320, "version": "0.9.8", "date": "2026-11-05", "why": "视口上下各多留 320px（约 1.1 屏）参与渲染。留足余量避免快速下落时瓦片来不及激活出现空洞；实测视口 284 + 两侧 320 = 924px 覆盖约 58 行" }
   },
   "gunboots": {
     "fireIntervalSteps":   { "value": 8,     "version": "0.3.0", "date": "2026-11-04", "why": "60 步/秒 ÷ 8 = 7.5 发/秒，DW-02 只给了 scrBurstFire 一个符号，射速取这个量级" },

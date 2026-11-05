@@ -1450,10 +1450,11 @@ System.register("chunks:///_virtual/Enemy.ts", ['./rollupPluginModLoBabelHelpers
 });
 
 System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './ComboTracker.ts', './Enemy.ts', './GemManager.ts', './LevelData.ts', './PlayerController.ts', './PlayerHealth.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, AudioManager, FixedStepDriver, getTuning, BulletPool, ComboTracker, Enemy, GemManager, PLATFORM_SPECS, platformTopY, LEVEL_COLS, solidAtWorld, PlayerController, PlayerHealth;
+  var _inheritsLoose, _createForOfIteratorHelperLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, AudioManager, FixedStepDriver, getTuning, BulletPool, ComboTracker, Enemy, GemManager, PLATFORM_SPECS, platformTopY, LEVEL_COLS, solidAtWorld, FLOOR_START_ROW, PlayerController, PlayerHealth;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
+      _createForOfIteratorHelperLoose = module.createForOfIteratorHelperLoose;
       _createClass = module.createClass;
     }, function (module) {
       cclegacy = module.cclegacy;
@@ -1483,6 +1484,7 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
       platformTopY = module.platformTopY;
       LEVEL_COLS = module.LEVEL_COLS;
       solidAtWorld = module.solidAtWorld;
+      FLOOR_START_ROW = module.FLOOR_START_ROW;
     }, function (module) {
       PlayerController = module.PlayerController;
     }, function (module) {
@@ -1492,7 +1494,32 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
       var _dec, _class;
       cclegacy._RF.push({}, "6754e7sG7FDmIw66eUW2Y3a", "EnemyManager", undefined);
       var ccclass = _decorator.ccclass;
-      var ENEMY_POOL_SIZE = 12; // TODO 待外置到 tuning
+
+      /** 蝙蝠：每 10 行一只，左右交替，铺满整口井 */
+      function buildBatSlots() {
+        var out = [];
+        var i = 0;
+        for (var row = 8; row <= FLOOR_START_ROW - 6; row += 10) {
+          out.push({
+            x: i % 2 === 0 ? 60 : 100,
+            y: -row * 16 - 8
+          });
+          i += 1;
+        }
+        return out;
+      }
+
+      /** 蜗牛：每 4 个平台取一个 left/right 平台（跳掉 middle） */
+      function buildSnailIndices() {
+        var out = [];
+        for (var idx = 3; idx < PLATFORM_SPECS.length; idx += 4) {
+          out.push(idx);
+        }
+        return out;
+      }
+      var BAT_SLOTS = buildBatSlots();
+      var SNAIL_INDICES = buildSnailIndices();
+      var ENEMY_POOL_SIZE = BAT_SLOTS.length + SNAIL_INDICES.length;
 
       /** 在 PLATFORM_SPECS 中下标 index 处取平台；若为 middle 则向后顺延至 left/right。 */
       function snailPlatformAtIndex(index) {
@@ -1620,15 +1647,12 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
           if (!this._poolReady) {
             return;
           }
-          var batRows = [8, 12, 16, 20];
-          var batXs = [60, 100, 58, 102];
-          for (var i = 0; i < batRows.length; i += 1) {
-            var row = batRows[i];
-            this._spawnOne('bat', batXs[i], -row * 16 - 8, 1);
+          for (var _iterator = _createForOfIteratorHelperLoose(BAT_SLOTS), _step2; !(_step2 = _iterator()).done;) {
+            var slot = _step2.value;
+            this._spawnOne('bat', slot.x, slot.y, 1);
           }
-          var snailIndices = [3, 8, 12];
-          for (var _i = 0, _snailIndices = snailIndices; _i < _snailIndices.length; _i++) {
-            var idx = _snailIndices[_i];
+          for (var _iterator2 = _createForOfIteratorHelperLoose(SNAIL_INDICES), _step3; !(_step3 = _iterator2()).done;) {
+            var idx = _step3.value;
             var _snailPlatformAtIndex = snailPlatformAtIndex(idx),
               spec = _snailPlatformAtIndex.spec,
               usedIndex = _snailPlatformAtIndex.usedIndex;
@@ -3252,142 +3276,74 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
         solidAtWorld: solidAtWorld
       });
       cclegacy._RF.push({}, "e7c3dkaK09OCJxtGlt+DyxI", "LevelData", undefined);
-      /** 手摆竖井：16px 格（sprTile1），11 列 × 53 行；内宽 9 格（144px），墙厚 1 格。 */
+      /** 手摆竖井：16px 格（sprTile1），11 列；内宽 9 格（144px），墙厚 1 格。深度由 LEVEL_SCREENS 驱动。 */
       var LEVEL_COLS = exports('LEVEL_COLS', 11);
-      var LEVEL_ROWS = exports('LEVEL_ROWS', 53);
+
+      /** 一小关几屏。★ 想调关卡长度只改这一个数字 ★ 1 屏 = 17 行 ≈ 272px */
+      var LEVEL_SCREENS = exports('LEVEL_SCREENS', 8);
+
+      /** 每屏行数（视口 284px / 16px，取整 17） */
+      var ROWS_PER_SCREEN = exports('ROWS_PER_SCREEN', 17);
+
+      /** 井底地面厚度（行） */
+      var FLOOR_THICKNESS = exports('FLOOR_THICKNESS', 3);
+
+      /** 井的总行数：屏幕数 × 每屏行数 + 地面厚度 */
+      var LEVEL_ROWS = exports('LEVEL_ROWS', LEVEL_SCREENS * ROWS_PER_SCREEN + FLOOR_THICKNESS);
+
+      /** 地面起始行（含） */
+      var FLOOR_START_ROW = exports('FLOOR_START_ROW', LEVEL_ROWS - FLOOR_THICKNESS);
       var LEVEL_TILE_PX = exports('LEVEL_TILE_PX', 16);
       var WALL_THICKNESS = exports('WALL_THICKNESS', 1);
-      var FLOOR_START_ROW = 50;
       var PLAYABLE_COL0 = exports('PLAYABLE_COL0', 1);
       var PLAYABLE_COL1 = exports('PLAYABLE_COL1', LEVEL_COLS - WALL_THICKNESS - 1); // 9
 
       /** 世界整体水平偏移：176px 宽的世界在 160px 视口里居中（只影响渲染，物理坐标不动） */
       var LEVEL_VIEW_OFFSET_X = exports('LEVEL_VIEW_OFFSET_X', -8);
-      /** 11 层落脚平台：行距 4 行（64px），侧别 left → right → middle 循环。 */
-      var PLATFORM_SPECS = exports('PLATFORM_SPECS', [{
-        row: 6,
-        side: 'left',
-        col0: 1,
-        len: 3
-      }, {
-        row: 10,
-        side: 'right',
-        col0: 7,
-        len: 3
-      }, {
-        row: 14,
-        side: 'middle',
-        col0: 4,
-        len: 3
-      }, {
-        row: 18,
-        side: 'left',
-        col0: 1,
-        len: 3
-      }, {
-        row: 22,
-        side: 'right',
-        col0: 7,
-        len: 3
-      }, {
-        row: 26,
-        side: 'middle',
-        col0: 4,
-        len: 3
-      }, {
-        row: 30,
-        side: 'left',
-        col0: 1,
-        len: 3
-      }, {
-        row: 34,
-        side: 'right',
-        col0: 7,
-        len: 3
-      }, {
-        row: 38,
-        side: 'middle',
-        col0: 4,
-        len: 3
-      }, {
-        row: 42,
-        side: 'left',
-        col0: 1,
-        len: 3
-      }, {
-        row: 46,
-        side: 'right',
-        col0: 7,
-        len: 3
-      }]);
+      /**
+       * 厚平台：从 row 6 起每 4 行一块，左 → 右 → 中 循环，直到地面之前。
+       * 列宽与 col0 沿用原设计（left=1,len=3 / middle=4,len=3 / right=7,len=3）。
+       */
+      function buildPlatformSpecs() {
+        var specs = [];
+        var sides = ['left', 'right', 'middle'];
+        var i = 0;
+        for (var row = 6; row <= FLOOR_START_ROW - 4; row += 4) {
+          var side = sides[i % sides.length];
+          var col0 = side === 'left' ? 1 : side === 'middle' ? 4 : 7;
+          specs.push({
+            row: row,
+            side: side,
+            col0: col0,
+            len: 3
+          });
+          i += 1;
+        }
+        return specs;
+      }
+      var PLATFORM_SPECS = exports('PLATFORM_SPECS', buildPlatformSpecs());
 
-      /** 6 块薄板：每 12 行一块，左右交替，与厚平台错开 */
-      var THIN_PLATFORM_SPECS = exports('THIN_PLATFORM_SPECS', [{
-        row: 8,
-        col0: 5,
-        len: 3
-      }, {
-        row: 20,
-        col0: 2,
-        len: 3
-      }, {
-        row: 32,
-        col0: 5,
-        len: 3
-      }, {
-        row: 44,
-        col0: 2,
-        len: 3
-      }, {
-        row: 12,
-        col0: 2,
-        len: 3
-      }, {
-        row: 24,
-        col0: 5,
-        len: 3
-      }]);
+      /** 薄板：从 row 8 起每 12 行一块，左右交替，与厚平台错开 */
+      function buildThinPlatformSpecs() {
+        var specs = [];
+        var i = 0;
+        for (var row = 8; row <= FLOOR_START_ROW - 6; row += 12) {
+          specs.push({
+            row: row,
+            col0: i % 2 === 0 ? 5 : 2,
+            len: 3
+          });
+          i += 1;
+        }
+        return specs;
+      }
+      var THIN_PLATFORM_SPECS = exports('THIN_PLATFORM_SPECS', buildThinPlatformSpecs());
 
       /** 薄板碰撞厚度（只有玩家从上方落下时才算实心） */
       var THIN_PLATFORM_THICKNESS = exports('THIN_PLATFORM_THICKNESS', 4);
 
       /** 与 TuningConfig DEFAULT_TUNING.crumble.hp / gemChunk.hp / tuning.json 默认值同步（编译期不可读 tuning）。 */
       var CRUMBLE_HP_MAX = exports('CRUMBLE_HP_MAX', 3);
-      /**
-       * 房间里的宝石堆：2×2 格，3 发打碎，碎后爆 4 颗宝石。
-       * 放在房间地面上（row 15 是地面上一格，所以堆底 row 16）。
-       */
-      var GEM_CHUNKS = exports('GEM_CHUNKS', [{
-        roomIndex: 0,
-        row: 9,
-        col: 7
-      }, {
-        roomIndex: 0,
-        row: 14,
-        col: 5
-      }, {
-        roomIndex: 1,
-        row: 9,
-        col: 7
-      }, {
-        roomIndex: 1,
-        row: 14,
-        col: 5
-      }, {
-        roomIndex: 2,
-        row: 9,
-        col: 7
-      }, {
-        roomIndex: 2,
-        row: 14,
-        col: 5
-      }]);
-      var GEM_CHUNK_STATES = exports('GEM_CHUNK_STATES', GEM_CHUNKS.map(function (spec) {
-        return {
-          spec: spec,
-          hp: CRUMBLE_HP_MAX
-        };
-      }));
       var gemChunkEvents = [];
       function consumeGemChunkEvents() {
         if (gemChunkEvents.length === 0) {
@@ -3472,40 +3428,60 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
           grid[spec.row][spec.col0 + i] = 1;
         }
       }
-      /** 井壁上开的侧门：挂在右墙内侧，3 个 */
-      var SIDE_PORTS = exports('SIDE_PORTS', [{
-        roomIndex: 0,
-        col: 9,
-        row: 15
-      }, {
-        roomIndex: 1,
-        col: 1,
-        row: 29
-      }, {
-        roomIndex: 2,
-        col: 9,
-        row: 43
-      }]);
+      /** 每隔多少行放一个侧门（同时决定房间数量） */
+      var PORT_SPACING_ROWS = 28;
+      function buildSidePorts() {
+        var ports = [];
+        var i = 0;
+        for (var row = 15; row <= FLOOR_START_ROW - 8; row += PORT_SPACING_ROWS) {
+          var col = i % 2 === 0 ? 9 : 1;
+          ports.push({
+            roomIndex: i,
+            col: col,
+            row: row
+          });
+          i += 1;
+        }
+        return ports;
+      }
+      var SIDE_PORTS = exports('SIDE_PORTS', buildSidePorts());
 
       /** 井底传送门所在的列（地面上挖空，玩家从这里掉下去进下一关） */
       var BOTTOM_PORTAL_COLS = exports('BOTTOM_PORTAL_COLS', [4, 5, 6]);
+      var ROOM_EXITS = exports('ROOM_EXITS', SIDE_PORTS.map(function (port, i) {
+        return {
+          roomIndex: i,
+          row: 15,
+          col: port.col === 9 ? 1 : 9
+        };
+      }));
+
       /**
-       * 房间出口：踩上去回到进房前的井内位置。
-       * 放在房间右下角，与入口（顶部 col4~6）拉开距离，玩家必须主动横走过去。
+       * 房间里的宝石堆：2×2 格，3 发打碎，碎后爆 4 颗宝石。
        */
-      var ROOM_EXITS = exports('ROOM_EXITS', [{
-        roomIndex: 0,
-        row: 15,
-        col: 9
-      }, {
-        roomIndex: 1,
-        row: 15,
-        col: 1
-      }, {
-        roomIndex: 2,
-        row: 15,
-        col: 9
-      }]);
+      function buildGemChunks() {
+        var chunks = [];
+        for (var i = 0; i < SIDE_PORTS.length; i += 1) {
+          chunks.push({
+            roomIndex: i,
+            row: 9,
+            col: 7
+          });
+          chunks.push({
+            roomIndex: i,
+            row: 14,
+            col: 5
+          });
+        }
+        return chunks;
+      }
+      var GEM_CHUNKS = exports('GEM_CHUNKS', buildGemChunks());
+      var GEM_CHUNK_STATES = exports('GEM_CHUNK_STATES', GEM_CHUNKS.map(function (spec) {
+        return {
+          spec: spec,
+          hp: CRUMBLE_HP_MAX
+        };
+      }));
       function buildLevelGrid() {
         var grid = [];
         for (var row = 0; row < LEVEL_ROWS; row++) {
@@ -3517,18 +3493,18 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
           }
           grid.push(cells);
         }
-        for (var _i = 0, _PLATFORM_SPECS = PLATFORM_SPECS; _i < _PLATFORM_SPECS.length; _i++) {
-          var spec = _PLATFORM_SPECS[_i];
+        for (var _iterator = _createForOfIteratorHelperLoose(PLATFORM_SPECS), _step; !(_step = _iterator()).done;) {
+          var spec = _step.value;
           applyPlatformSpec(grid, spec);
         }
-        for (var _i2 = 0, _SIDE_PORTS = SIDE_PORTS; _i2 < _SIDE_PORTS.length; _i2++) {
-          var port = _SIDE_PORTS[_i2];
+        for (var _iterator2 = _createForOfIteratorHelperLoose(SIDE_PORTS), _step2; !(_step2 = _iterator2()).done;) {
+          var port = _step2.value;
           grid[port.row][port.col] = 0;
         }
         // 地面是 FLOOR_START_ROW..LEVEL_ROWS-1 共 3 行，必须整层挖穿，否则玩家踩在上面掉不下去
         for (var _row = FLOOR_START_ROW; _row < LEVEL_ROWS; _row += 1) {
-          for (var _i3 = 0, _BOTTOM_PORTAL_COLS = BOTTOM_PORTAL_COLS; _i3 < _BOTTOM_PORTAL_COLS.length; _i3++) {
-            var _col = _BOTTOM_PORTAL_COLS[_i3];
+          for (var _i = 0, _BOTTOM_PORTAL_COLS = BOTTOM_PORTAL_COLS; _i < _BOTTOM_PORTAL_COLS.length; _i++) {
+            var _col = _BOTTOM_PORTAL_COLS[_i];
             grid[_row][_col] = 0;
           }
         }
@@ -3546,8 +3522,9 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
       var LEVEL_GRID = exports('LEVEL_GRID', buildLevelGrid());
       var ROOM_COLS = exports('ROOM_COLS', 11);
       var ROOM_ROWS = exports('ROOM_ROWS', 17);
-      var ROOM_BASE_Y = exports('ROOM_BASE_Y', -1100);
       var ROOM_GAP = exports('ROOM_GAP', 64);
+      /** 侧室整体放在井底以下，避免与加深的井内行坐标重叠 */
+      var ROOM_BASE_Y = exports('ROOM_BASE_Y', -LEVEL_ROWS * LEVEL_TILE_PX - ROOM_GAP);
       var ROOM_CRUMBLE_SPECS = [{
         row: 6,
         col0: 1,
@@ -3580,14 +3557,14 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
           }
           grid.push(cells);
         }
-        for (var _iterator = _createForOfIteratorHelperLoose(ROOM_CRUMBLE_SPECS), _step; !(_step = _iterator()).done;) {
-          var spec = _step.value;
+        for (var _iterator3 = _createForOfIteratorHelperLoose(ROOM_CRUMBLE_SPECS), _step3; !(_step3 = _iterator3()).done;) {
+          var spec = _step3.value;
           for (var i = 0; i < spec.len; i += 1) {
             grid[spec.row][spec.col0 + i] = 1;
           }
         }
-        for (var _iterator2 = _createForOfIteratorHelperLoose(ROOM_EXITS), _step2; !(_step2 = _iterator2()).done;) {
-          var exit = _step2.value;
+        for (var _iterator4 = _createForOfIteratorHelperLoose(ROOM_EXITS), _step4; !(_step4 = _iterator4()).done;) {
+          var exit = _step4.value;
           grid[exit.row][exit.col] = 0;
         }
         return grid;
@@ -3601,8 +3578,8 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
           }
           table.push(cells);
         }
-        for (var _i4 = 0, _ROOM_CRUMBLE_SPECS = ROOM_CRUMBLE_SPECS; _i4 < _ROOM_CRUMBLE_SPECS.length; _i4++) {
-          var spec = _ROOM_CRUMBLE_SPECS[_i4];
+        for (var _i2 = 0, _ROOM_CRUMBLE_SPECS = ROOM_CRUMBLE_SPECS; _i2 < _ROOM_CRUMBLE_SPECS.length; _i2++) {
+          var spec = _ROOM_CRUMBLE_SPECS[_i2];
           for (var i = 0; i < spec.len; i += 1) {
             table[spec.row][spec.col0 + i] = CRUMBLE_HP_MAX;
           }
@@ -3612,7 +3589,7 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
       function buildRoomInstances() {
         var rooms = [];
         var stride = ROOM_ROWS * LEVEL_TILE_PX + ROOM_GAP;
-        for (var i = 0; i < 3; i += 1) {
+        for (var i = 0; i < SIDE_PORTS.length; i += 1) {
           var grid = buildRoomGrid();
           rooms.push({
             index: i,
@@ -3634,8 +3611,8 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
           }
           table.push(cells);
         }
-        for (var _i5 = 0, _PLATFORM_SPECS2 = PLATFORM_SPECS; _i5 < _PLATFORM_SPECS2.length; _i5++) {
-          var spec = _PLATFORM_SPECS2[_i5];
+        for (var _iterator5 = _createForOfIteratorHelperLoose(PLATFORM_SPECS), _step5; !(_step5 = _iterator5()).done;) {
+          var spec = _step5.value;
           for (var i = 0; i < spec.len; i += 1) {
             table[spec.row][spec.col0 + i] = CRUMBLE_HP_MAX;
           }
@@ -3703,8 +3680,8 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
           };
         }
         var roomH = ROOM_ROWS * LEVEL_TILE_PX;
-        for (var _iterator3 = _createForOfIteratorHelperLoose(ROOM_INSTANCES), _step3; !(_step3 = _iterator3()).done;) {
-          var room = _step3.value;
+        for (var _iterator6 = _createForOfIteratorHelperLoose(ROOM_INSTANCES), _step6; !(_step6 = _iterator6()).done;) {
+          var room = _step6.value;
           if (y <= room.originY && y > room.originY - roomH) {
             var _row2 = Math.floor((room.originY - y) / LEVEL_TILE_PX);
             if (_row2 < 0 || _row2 >= ROOM_ROWS) {
@@ -3848,18 +3825,18 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
             console.error("[LevelData] row " + _row4 + " has no run of 2+ consecutive empty tiles in playable cols (max=" + maxEmpty + ")");
           }
         }
-        for (var _iterator4 = _createForOfIteratorHelperLoose(PLATFORM_SPECS), _step4; !(_step4 = _iterator4()).done;) {
-          var spec = _step4.value;
+        for (var _iterator7 = _createForOfIteratorHelperLoose(PLATFORM_SPECS), _step7; !(_step7 = _iterator7()).done;) {
+          var spec = _step7.value;
           var colEnd = spec.col0 + spec.len - 1;
           if (spec.col0 < PLAYABLE_COL0 || colEnd > PLAYABLE_COL1) {
             console.error("[LevelData] platform at row " + spec.row + " out of playable cols: col0=" + spec.col0 + " len=" + spec.len);
           }
         }
-        if (ROOM_INSTANCES.length !== 3) {
-          console.error("[LevelData] ROOM_INSTANCES.length " + ROOM_INSTANCES.length + " !== 3");
+        if (ROOM_INSTANCES.length !== SIDE_PORTS.length) {
+          console.error("[LevelData] ROOM_INSTANCES.length " + ROOM_INSTANCES.length + " !== SIDE_PORTS.length " + SIDE_PORTS.length);
         }
-        for (var _iterator5 = _createForOfIteratorHelperLoose(ROOM_INSTANCES), _step5; !(_step5 = _iterator5()).done;) {
-          var room = _step5.value;
+        for (var _iterator8 = _createForOfIteratorHelperLoose(ROOM_INSTANCES), _step8; !(_step8 = _iterator8()).done;) {
+          var room = _step8.value;
           if (room.grid.length !== ROOM_ROWS) {
             console.error("[LevelData] room " + room.index + " grid rows " + room.grid.length + " !== " + ROOM_ROWS);
           }
@@ -3869,20 +3846,20 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
             }
           }
         }
-        for (var _iterator6 = _createForOfIteratorHelperLoose(SIDE_PORTS), _step6; !(_step6 = _iterator6()).done;) {
-          var port = _step6.value;
+        for (var _iterator9 = _createForOfIteratorHelperLoose(SIDE_PORTS), _step9; !(_step9 = _iterator9()).done;) {
+          var port = _step9.value;
           var _cx = port.col * LEVEL_TILE_PX + LEVEL_TILE_PX / 2;
           var _cy = -port.row * LEVEL_TILE_PX - LEVEL_TILE_PX / 2;
           if (solidAtWorld(_cx, _cy)) {
             console.error("[LevelData] SIDE_PORT row=" + port.row + " col=" + port.col + " not carved (solid)");
           }
         }
-        if (ROOM_EXITS.length !== 3) {
-          console.error("[LevelData] ROOM_EXITS.length " + ROOM_EXITS.length + " !== 3");
+        if (ROOM_EXITS.length !== SIDE_PORTS.length) {
+          console.error("[LevelData] ROOM_EXITS.length " + ROOM_EXITS.length + " !== SIDE_PORTS.length " + SIDE_PORTS.length);
         }
         // 出口格必须可穿越（挖空）
-        for (var _iterator7 = _createForOfIteratorHelperLoose(ROOM_EXITS), _step7; !(_step7 = _iterator7()).done;) {
-          var exit = _step7.value;
+        for (var _iterator10 = _createForOfIteratorHelperLoose(ROOM_EXITS), _step10; !(_step10 = _iterator10()).done;) {
+          var exit = _step10.value;
           var _room = ROOM_INSTANCES[exit.roomIndex];
           if (!_room) {
             console.error("[LevelData] ROOM_EXIT missing room " + exit.roomIndex);
@@ -3895,9 +3872,9 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
           }
         }
         console.log("[LevelData] exits cleared=" + ROOM_EXITS.length);
-        console.log("[LevelData] rooms=3 exits=3");
-        if (GEM_CHUNKS.length !== 6) {
-          console.error("[LevelData] GEM_CHUNKS.length " + GEM_CHUNKS.length + " !== 6");
+        var expectedGemChunks = SIDE_PORTS.length * 2;
+        if (GEM_CHUNKS.length !== expectedGemChunks) {
+          console.error("[LevelData] GEM_CHUNKS.length " + GEM_CHUNKS.length + " !== " + expectedGemChunks);
         }
         var _loop = function _loop() {
           var spec = GEM_CHUNKS[ci];
@@ -3931,8 +3908,8 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
           _loop();
         }
         // 宝石堆正上方必须没有实心格，否则子弹打不到（只能从上往下打）
-        for (var _iterator8 = _createForOfIteratorHelperLoose(GEM_CHUNKS), _step8; !(_step8 = _iterator8()).done;) {
-          var _spec = _step8.value;
+        for (var _iterator11 = _createForOfIteratorHelperLoose(GEM_CHUNKS), _step11; !(_step11 = _iterator11()).done;) {
+          var _spec = _step11.value;
           var _room2 = ROOM_INSTANCES[_spec.roomIndex];
           var minRow = Math.max(0, _spec.row - 8);
           for (var _row8 = _spec.row - 1; _row8 >= minRow; _row8 -= 1) {
@@ -3950,8 +3927,8 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
           console.error("[LevelData] bottom portal center (" + bp.x + "," + bp.y + ") is solid");
         }
         for (var _row5 = FLOOR_START_ROW; _row5 < LEVEL_ROWS; _row5 += 1) {
-          for (var _iterator9 = _createForOfIteratorHelperLoose(BOTTOM_PORTAL_COLS), _step9; !(_step9 = _iterator9()).done;) {
-            var _col3 = _step9.value;
+          for (var _iterator12 = _createForOfIteratorHelperLoose(BOTTOM_PORTAL_COLS), _step12; !(_step12 = _iterator12()).done;) {
+            var _col3 = _step12.value;
             var cx = _col3 * LEVEL_TILE_PX + LEVEL_TILE_PX / 2;
             var cy = -_row5 * LEVEL_TILE_PX - LEVEL_TILE_PX / 2;
             if (solidAtWorld(cx, cy)) {
@@ -3960,6 +3937,7 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
           }
         }
         console.log('[LevelData] bottom portal open 3x3 at cols=4,5,6');
+        console.log("[LevelData] screens=" + LEVEL_SCREENS + " rows=" + LEVEL_ROWS + " platforms=" + PLATFORM_SPECS.length + " thin=" + THIN_PLATFORM_SPECS.length + " ports=" + SIDE_PORTS.length + " rooms=" + ROOM_INSTANCES.length + " gemChunks=" + GEM_CHUNKS.length);
       }
       assertLevel();
       cclegacy._RF.pop();
@@ -4264,6 +4242,8 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
           _this._gemChunkDestroyAnims = new Map();
           _this._gemChunkIdleStep = 0;
           _this._gemChunkIdleFrame = 0;
+          _this._cullables = [];
+          _this._cullStep = 0;
           return _this;
         }
         var _proto = LevelView.prototype;
@@ -4310,6 +4290,7 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
                     }
                     _this2._buildTileSprites(tilePrefab, frames, tileSize);
                     _this2._buildRoomTiles(tilePrefab, frames, tileSize);
+                    _this2._refreshCullNow();
                     _this2._loadPortalFrames(bundle, tilePrefab, tileSize);
                     bundle.load('sprite/platform/thin_platform/spriteFrame', SpriteFrame, function (thinErr, thinFrame) {
                       if (thinErr || !thinFrame) {
@@ -4317,6 +4298,7 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
                         return;
                       }
                       _this2._buildThinPlatforms(tilePrefab, thinFrame, tileSize);
+                      _this2._refreshCullNow();
                     });
                   }
                 });
@@ -4328,6 +4310,7 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
           });
         };
         _proto.update = function update() {
+          this._cull();
           var events = consumeCrumbleEvents();
           for (var _iterator = _createForOfIteratorHelperLoose(events), _step; !(_step = _iterator()).done;) {
             var ev = _step.value;
@@ -4340,6 +4323,51 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
             this._onGemChunk(_ev);
           }
           this._stepGemChunkAnims();
+        };
+        _proto._registerCullable = function _registerCullable(node, y) {
+          this._cullables.push({
+            node: node,
+            y: y
+          });
+        };
+        _proto._camYForCull = function _camYForCull() {
+          var world = this.node.parent;
+          if (!world) {
+            return null;
+          }
+          return getTuning().render.designHeight / 2 - world.position.y;
+        };
+        _proto._applyCull = function _applyCull(camY) {
+          var margin = getTuning().level.cullMarginPx;
+          var halfView = getTuning().render.designHeight / 2 + margin;
+          for (var i = 0; i < this._cullables.length; i += 1) {
+            var c = this._cullables[i];
+            if (!c.node.isValid) {
+              continue;
+            }
+            var visible = Math.abs(c.y - camY) <= halfView;
+            if (c.node.active !== visible) {
+              c.node.active = visible;
+            }
+          }
+        };
+        _proto._refreshCullNow = function _refreshCullNow() {
+          var camY = this._camYForCull();
+          if (camY === null) {
+            return;
+          }
+          this._applyCull(camY);
+        };
+        _proto._cull = function _cull() {
+          this._cullStep = (this._cullStep + 1) % 3;
+          if (this._cullStep !== 0) {
+            return;
+          }
+          var camY = this._camYForCull();
+          if (camY === null) {
+            return;
+          }
+          this._applyCull(camY);
         };
         _proto._loadCrumbleFrames = function _loadCrumbleFrames(bundle) {
           var _this3 = this;
@@ -4423,15 +4451,18 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
             var ut = node.addComponent(UITransform);
             ut.setContentSize(32, 32);
             ut.setAnchorPoint(0.5, 0.5);
-            node.setPosition(spec.col * LEVEL_TILE_PX + LEVEL_TILE_PX, room.originY - spec.row * LEVEL_TILE_PX - LEVEL_TILE_PX);
+            var y = room.originY - spec.row * LEVEL_TILE_PX - LEVEL_TILE_PX;
+            node.setPosition(spec.col * LEVEL_TILE_PX + LEVEL_TILE_PX, y);
             var sprite = node.addComponent(Sprite);
             sprite.spriteFrame = this._gemChunkFrames[0];
             sprite.color = TILE_WHITE;
+            this._registerCullable(node, y);
             this._gemChunkMap.set(i, {
               node: node,
               sprite: sprite
             });
           }
+          this._refreshCullNow();
         };
         _proto._onGemChunk = function _onGemChunk(ev) {
           var _find$getComponent, _find;
@@ -4665,6 +4696,7 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
           node.name = 'BottomPortal';
           this.node.addChild(node);
           node.setPosition(center.x, center.y);
+          this._registerCullable(node, center.y);
           var sprite = node.getComponent(Sprite);
           if (!sprite || this._portalFrames.length === 0) {
             return;
@@ -4672,6 +4704,7 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
           sprite.spriteFrame = this._portalFrames[0];
           sprite.color = TILE_WHITE;
           this._portalSprites.push(sprite);
+          this._refreshCullNow();
         };
         _proto._buildRoomExits = function _buildRoomExits(tilePrefab, tileSize) {
           var half = tileSize / 2;
@@ -4684,7 +4717,9 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
             var node = instantiate(tilePrefab);
             node.name = 'RoomExit';
             this.node.addChild(node);
-            node.setPosition(exit.col * tileSize + half, room.originY - exit.row * tileSize - half);
+            var y = room.originY - exit.row * tileSize - half;
+            node.setPosition(exit.col * tileSize + half, y);
+            this._registerCullable(node, y);
             var sprite = node.getComponent(Sprite);
             if (!sprite || this._portalFrames.length === 0) {
               continue;
@@ -4701,7 +4736,9 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
             var node = instantiate(tilePrefab);
             node.name = 'SidePortal';
             this.node.addChild(node);
-            node.setPosition(port.col * tileSize + half, -port.row * tileSize - half);
+            var y = -port.row * tileSize - half;
+            node.setPosition(port.col * tileSize + half, y);
+            this._registerCullable(node, y);
             var sprite = node.getComponent(Sprite);
             if (!sprite || this._portalFrames.length === 0) {
               continue;
@@ -4723,7 +4760,9 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
                 }
                 var node = instantiate(tilePrefab);
                 this.node.addChild(node);
-                node.setPosition(col * tileSize + half, room.originY - row * tileSize - half);
+                var y = room.originY - row * tileSize - half;
+                node.setPosition(col * tileSize + half, y);
+                this._registerCullable(node, y);
                 var sprite = node.getComponent(Sprite);
                 if (!sprite) {
                   continue;
@@ -4751,7 +4790,9 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
               }
               var node = instantiate(tilePrefab);
               this.node.addChild(node);
-              node.setPosition(col * tileSize + half, -row * tileSize - half);
+              var y = -row * tileSize - half;
+              node.setPosition(col * tileSize + half, y);
+              this._registerCullable(node, y);
               var sprite = node.getComponent(Sprite);
               if (!sprite) {
                 continue;
@@ -4777,7 +4818,9 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
               node.name = 'ThinPlatform';
               this.node.addChild(node);
               var col = spec.col0 + i;
-              node.setPosition(col * tileSize + half, -spec.row * tileSize);
+              var y = -spec.row * tileSize;
+              node.setPosition(col * tileSize + half, y);
+              this._registerCullable(node, y);
               var ut = node.getComponent(UITransform);
               if (ut) {
                 ut.setAnchorPoint(0.5, 1);
@@ -6219,7 +6262,8 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
         level: {
           tileSize: 16,
           wellWidthTiles: 10,
-          wallThicknessTiles: 2
+          wallThicknessTiles: 2,
+          cullMarginPx: 320
         },
         gunboots: {
           fireIntervalSteps: 8,
@@ -6346,7 +6390,8 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
           level: {
             tileSize: tuning.level.tileSize,
             wellWidthTiles: tuning.level.wellWidthTiles,
-            wallThicknessTiles: tuning.level.wallThicknessTiles
+            wallThicknessTiles: tuning.level.wallThicknessTiles,
+            cullMarginPx: tuning.level.cullMarginPx
           },
           gunboots: {
             fireIntervalSteps: tuning.gunboots.fireIntervalSteps,
@@ -6567,7 +6612,8 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
           level: {
             tileSize: readNumberValue(raw.level.tileSize, 'level.tileSize'),
             wellWidthTiles: readNumberValue(raw.level.wellWidthTiles, 'level.wellWidthTiles'),
-            wallThicknessTiles: readNumberValue(raw.level.wallThicknessTiles, 'level.wallThicknessTiles')
+            wallThicknessTiles: readNumberValue(raw.level.wallThicknessTiles, 'level.wallThicknessTiles'),
+            cullMarginPx: readNumberValue(raw.level.cullMarginPx, 'level.cullMarginPx')
           },
           gunboots: {
             fireIntervalSteps: readNumberValue(raw.gunboots.fireIntervalSteps, 'gunboots.fireIntervalSteps'),
