@@ -1981,8 +1981,8 @@ System.register("chunks:///_virtual/FixedStepDriver.ts", ['./rollupPluginModLoBa
   };
 });
 
-System.register("chunks:///_virtual/GameOver.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './TuningConfig.ts'], function (exports) {
-  var _inheritsLoose, cclegacy, _decorator, find, Graphics, UITransform, Color, director, Component, FixedStepDriver, getTuning;
+System.register("chunks:///_virtual/GameOver.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './RunState.ts', './TuningConfig.ts'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, find, Graphics, UITransform, Color, director, Component, FixedStepDriver, runState, getTuning;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -1997,6 +1997,8 @@ System.register("chunks:///_virtual/GameOver.ts", ['./rollupPluginModLoBabelHelp
       Component = module.Component;
     }, function (module) {
       FixedStepDriver = module.FixedStepDriver;
+    }, function (module) {
+      runState = module.runState;
     }, function (module) {
       getTuning = module.getTuning;
     }],
@@ -2027,6 +2029,8 @@ System.register("chunks:///_virtual/GameOver.ts", ['./rollupPluginModLoBabelHelp
               return;
             }
             ev.preventDefault();
+            // 死亡重开 = 新的一局，必须清空跨关卡状态（否则继承上一局的关卡号和分数）
+            runState.reset();
             director.loadScene('Main');
           };
           return _this;
