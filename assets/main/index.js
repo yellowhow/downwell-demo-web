@@ -1121,7 +1121,8 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
               }
               var node = instantiate(prefab);
               canvas.addChild(node);
-              node.setPosition(-52, 86);
+              // 原 (-52,86) 压在 DebugOverlay 首行文字上；挪到右侧，与 LEVEL 上下对称
+              node.setPosition(52, 86);
               if (!node.getComponent(ComboHud)) {
                 node.addComponent(ComboHud);
               }
