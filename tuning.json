@@ -1,5 +1,5 @@
 {
-  "meta": { "version": "0.9.0", "date": "2026-11-05" },
+  "meta": { "version": "0.9.1", "date": "2026-11-05" },
   "loop": {
     "fixedStepHz":   { "value": 60, "version": "0.1.0", "date": "2026-11-04", "why": "DW-01 实录：18 个房间 speed 全为 60" },
     "maxCatchUpSteps": { "value": 5, "version": "0.1.0", "date": "2026-11-04", "why": "防后台切回时补步雪崩" }
@@ -26,7 +26,8 @@
       "idleStepsPerFrame":  { "value": 12, "version": "0.8.0", "date": "2026-11-04", "why": "idle 4 帧循环，12 步/帧 = 5fps，站立呼吸感" },
       "airStepsPerFrame":   { "value": 8,  "version": "0.8.0", "date": "2026-11-04", "why": "air 5 帧循环，8 步/帧 = 7.5fps" },
       "shootStepsPerFrame": { "value": 5,  "version": "0.8.0", "date": "2026-11-04", "why": "shoot 4 帧循环，5 步/帧 = 12fps，射击要有反馈速度" },
-      "spinStepsPerFrame":  { "value": 4,  "version": "0.8.0", "date": "2026-11-04", "why": "spin 8 帧播一次，4 步/帧 = 15fps，起跳旋转要利落" }
+      "spinStepsPerFrame":  { "value": 4,  "version": "0.8.0", "date": "2026-11-04", "why": "spin 8 帧播一次，4 步/帧 = 15fps，起跳旋转要利落" },
+      "runStepsPerFrame": { "value": 4, "version": "0.9.1", "date": "2026-11-05", "why": "run 8 帧循环，4 步/帧 = 15fps，比 idle(5fps) 明显快，跑动有节奏" }
     }
   },
   "level": {

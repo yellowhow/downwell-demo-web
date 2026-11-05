@@ -3516,6 +3516,7 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           _this._stepBound = false;
           _this._sprite = null;
           _this._framesIdle = [];
+          _this._framesRun = [];
           _this._framesSpin = [];
           _this._framesAir = [];
           _this._framesShoot = [];
@@ -3691,6 +3692,7 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
                 });
               };
               _this3._framesIdle = byPrefix('idle_');
+              _this3._framesRun = byPrefix('run_');
               _this3._framesSpin = byPrefix('spin_');
               _this3._framesAir = byPrefix('air_');
               _this3._framesShoot = byPrefix('shoot_');
@@ -3705,7 +3707,9 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           }
           var firingAir = this.firingHeld && !this._onGround;
           if (this._onGround) {
-            this._setAnimState('idle');
+            var wantMove = inputState.left || inputState.right;
+            var moving = wantMove && Math.abs(this._vx) > 0.05;
+            this._setAnimState(moving ? 'run' : 'idle');
           } else if (firingAir) {
             this._setAnimState('shoot');
           } else if (this._animState === 'spin') {
@@ -3714,7 +3718,7 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
             }
           } else if (this._animState === 'shoot') {
             this._setAnimState('air');
-          } else if (this._animState === 'idle') {
+          } else if (this._animState === 'idle' || this._animState === 'run') {
             this._setAnimState('air');
           }
           this._advanceAnimFrame();
@@ -3745,6 +3749,8 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           switch (state) {
             case 'idle':
               return this._framesIdle;
+            case 'run':
+              return this._framesRun;
             case 'spin':
               return this._framesSpin;
             case 'air':
@@ -3760,6 +3766,8 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           switch (state) {
             case 'idle':
               return anim.idleStepsPerFrame;
+            case 'run':
+              return anim.runStepsPerFrame;
             case 'spin':
               return anim.spinStepsPerFrame;
             case 'air':
@@ -4608,7 +4616,8 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
             idleStepsPerFrame: 12,
             airStepsPerFrame: 8,
             shootStepsPerFrame: 5,
-            spinStepsPerFrame: 4
+            spinStepsPerFrame: 4,
+            runStepsPerFrame: 4
           }
         },
         level: {
@@ -4714,7 +4723,8 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
               idleStepsPerFrame: tuning.player.anim.idleStepsPerFrame,
               airStepsPerFrame: tuning.player.anim.airStepsPerFrame,
               shootStepsPerFrame: tuning.player.anim.shootStepsPerFrame,
-              spinStepsPerFrame: tuning.player.anim.spinStepsPerFrame
+              spinStepsPerFrame: tuning.player.anim.spinStepsPerFrame,
+              runStepsPerFrame: tuning.player.anim.runStepsPerFrame
             }
           },
           level: {
@@ -4910,7 +4920,8 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
               idleStepsPerFrame: readNumberValue(playerAnimRaw.idleStepsPerFrame, 'player.anim.idleStepsPerFrame'),
               airStepsPerFrame: readNumberValue(playerAnimRaw.airStepsPerFrame, 'player.anim.airStepsPerFrame'),
               shootStepsPerFrame: readNumberValue(playerAnimRaw.shootStepsPerFrame, 'player.anim.shootStepsPerFrame'),
-              spinStepsPerFrame: readNumberValue(playerAnimRaw.spinStepsPerFrame, 'player.anim.spinStepsPerFrame')
+              spinStepsPerFrame: readNumberValue(playerAnimRaw.spinStepsPerFrame, 'player.anim.spinStepsPerFrame'),
+              runStepsPerFrame: readNumberValue(playerAnimRaw.runStepsPerFrame, 'player.anim.runStepsPerFrame')
             }
           },
           level: {
