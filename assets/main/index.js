@@ -5551,7 +5551,7 @@ System.register("chunks:///_virtual/PlayerHealth.ts", ['./rollupPluginModLoBabel
 });
 
 System.register("chunks:///_virtual/RoomManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './LevelData.ts', './PlayerController.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, find, Component, FixedStepDriver, SIDE_PORTS, ROOM_INSTANCES, ROOM_EXITS, LEVEL_TILE_PX, PlayerController;
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, Component, FixedStepDriver, SIDE_PORTS, ROOM_EXITS, ROOM_INSTANCES, LEVEL_TILE_PX, PlayerController;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -5565,8 +5565,8 @@ System.register("chunks:///_virtual/RoomManager.ts", ['./rollupPluginModLoBabelH
       FixedStepDriver = module.FixedStepDriver;
     }, function (module) {
       SIDE_PORTS = module.SIDE_PORTS;
-      ROOM_INSTANCES = module.ROOM_INSTANCES;
       ROOM_EXITS = module.ROOM_EXITS;
+      ROOM_INSTANCES = module.ROOM_INSTANCES;
       LEVEL_TILE_PX = module.LEVEL_TILE_PX;
     }, function (module) {
       PlayerController = module.PlayerController;
@@ -5591,6 +5591,8 @@ System.register("chunks:///_virtual/RoomManager.ts", ['./rollupPluginModLoBabelH
             y: 0
           };
           _this._stepBound = false;
+          /** 出房后必须完全离开所有侧门 AABB，才允许再次进房（防止出门即回吸） */
+          _this._portalArmed = true;
           return _this;
         }
         var _proto = RoomManager.prototype;
@@ -5603,6 +5605,12 @@ System.register("chunks:///_virtual/RoomManager.ts", ['./rollupPluginModLoBabelH
           if (!this._player) {
             console.error('[RoomManager] PlayerController not found at World/Player');
           }
+          for (var i = 0; i < SIDE_PORTS.length; i += 1) {
+            if (SIDE_PORTS[i].roomIndex !== i) {
+              console.error("[RoomManager] SIDE_PORTS[" + i + "].roomIndex=" + SIDE_PORTS[i].roomIndex + " != " + i);
+            }
+          }
+          console.log("[RoomManager] ports=" + SIDE_PORTS.length + " exits=" + ROOM_EXITS.length + " armed latch=on");
           window.__dwRoom = this;
         };
         _proto._bindStep = function _bindStep() {
@@ -5636,8 +5644,21 @@ System.register("chunks:///_virtual/RoomManager.ts", ['./rollupPluginModLoBabelH
           var bottom = hb.y - halfH;
           var top = hb.y + halfH;
           if (!this._inRoom) {
+            var overlappingAny = false;
             for (var i = 0; i < SIDE_PORTS.length; i += 1) {
-              var port = SIDE_PORTS[i];
+              if (this._aabbOverlapsTile(left, right, bottom, top, SIDE_PORTS[i])) {
+                overlappingAny = true;
+                break;
+              }
+            }
+            if (!overlappingAny) {
+              this._portalArmed = true;
+            }
+            if (!this._portalArmed) {
+              return;
+            }
+            for (var _i = 0; _i < SIDE_PORTS.length; _i += 1) {
+              var port = SIDE_PORTS[_i];
               if (this._aabbOverlapsTile(left, right, bottom, top, port)) {
                 this._enterRoom(port, pc);
                 return;
@@ -5651,8 +5672,8 @@ System.register("chunks:///_virtual/RoomManager.ts", ['./rollupPluginModLoBabelH
             return;
           }
           if (this._inRoom) {
-            for (var _i = 0; _i < ROOM_EXITS.length; _i += 1) {
-              var exit = ROOM_EXITS[_i];
+            for (var _i2 = 0; _i2 < ROOM_EXITS.length; _i2 += 1) {
+              var exit = ROOM_EXITS[_i2];
               if (exit.roomIndex !== this._currentRoom) {
                 continue;
               }
@@ -5672,15 +5693,18 @@ System.register("chunks:///_virtual/RoomManager.ts", ['./rollupPluginModLoBabelH
           }
         };
         _proto._leaveRoom = function _leaveRoom(pc) {
-          // 抬到门洞上方，避免落回时二次进入
-          var returnY = this._returnPos.y + 12;
-          pc._x = this._returnPos.x;
+          var port = SIDE_PORTS[this._currentRoom];
+          var pushIn = port && port.col <= 1 ? LEVEL_TILE_PX : -LEVEL_TILE_PX;
+          var returnX = this._returnPos.x + pushIn;
+          var returnY = this._returnPos.y + 20;
+          pc._x = returnX;
           pc._y = returnY;
           pc._vx = 0;
           pc._vy = 0;
-          this._player.node.setPosition(this._returnPos.x, returnY);
+          this._player.node.setPosition(returnX, returnY);
           this._inRoom = false;
           this._currentRoom = -1;
+          this._portalArmed = false;
         };
         _proto._aabbOverlapsTile = function _aabbOverlapsTile(left, right, bottom, top, port) {
           var tileLeft = port.col * LEVEL_TILE_PX;
@@ -5705,6 +5729,7 @@ System.register("chunks:///_virtual/RoomManager.ts", ['./rollupPluginModLoBabelH
           this._player.node.setPosition(destX, destY);
           this._inRoom = true;
           this._currentRoom = port.roomIndex;
+          this._portalArmed = true;
         };
         _createClass(RoomManager, [{
           key: "inRoom",
