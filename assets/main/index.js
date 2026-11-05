@@ -3950,8 +3950,8 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
   };
 });
 
-System.register("chunks:///_virtual/LevelFlow.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './RunState.ts', './TuningConfig.ts', './LevelData.ts', './PlayerController.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, find, Node, Layers, UITransform, UIOpacity, assetManager, SpriteFrame, Sprite, Color, director, Component, FixedStepDriver, runState, getTuning, LEVEL_ROWS, LEVEL_TILE_PX, PlayerController;
+System.register("chunks:///_virtual/LevelFlow.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './RunState.ts', './TuningConfig.ts', './LevelData.ts', './PlayerController.ts', './RoomManager.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, Node, Layers, UITransform, UIOpacity, assetManager, SpriteFrame, Sprite, Color, director, Component, FixedStepDriver, runState, getTuning, LEVEL_ROWS, LEVEL_TILE_PX, PlayerController, RoomManager;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -3981,6 +3981,8 @@ System.register("chunks:///_virtual/LevelFlow.ts", ['./rollupPluginModLoBabelHel
       LEVEL_TILE_PX = module.LEVEL_TILE_PX;
     }, function (module) {
       PlayerController = module.PlayerController;
+    }, function (module) {
+      RoomManager = module.RoomManager;
     }],
     execute: function () {
       var _dec, _class;
@@ -4000,11 +4002,20 @@ System.register("chunks:///_virtual/LevelFlow.ts", ['./rollupPluginModLoBabelHel
           _this._stepBound = false;
           _this._fadeOverlay = null;
           _this._fadeOpacity = null;
+          _this._room = null;
           return _this;
         }
         var _proto = LevelFlow.prototype;
         _proto.onLoad = function onLoad() {
           this._createFadeOverlay();
+          this._room = this.node.getComponent(RoomManager);
+          if (!this._room) {
+            var _find$getComponent, _find;
+            this._room = (_find$getComponent = (_find = find('World')) == null ? void 0 : _find.getComponent(RoomManager)) != null ? _find$getComponent : null;
+          }
+          if (!this._room) {
+            console.error('[LevelFlow] RoomManager not found — 进房时可能误触发关卡切换');
+          }
           this._bindStep();
           if (typeof window !== 'undefined') {
             window.__dwLevelFlow = this;
@@ -4061,8 +4072,8 @@ System.register("chunks:///_virtual/LevelFlow.ts", ['./rollupPluginModLoBabelHel
           this._stepBound = true;
         };
         _proto._playerY = function _playerY() {
-          var _find$getComponent, _find;
-          var player = (_find$getComponent = (_find = find('World/Player')) == null ? void 0 : _find.getComponent(PlayerController)) != null ? _find$getComponent : null;
+          var _find$getComponent2, _find2;
+          var player = (_find$getComponent2 = (_find2 = find('World/Player')) == null ? void 0 : _find2.getComponent(PlayerController)) != null ? _find$getComponent2 : null;
           if (!player) {
             return null;
           }
@@ -4072,6 +4083,11 @@ System.register("chunks:///_virtual/LevelFlow.ts", ['./rollupPluginModLoBabelHel
           var flow = getTuning().flow;
           var floorY = -LEVEL_ROWS * LEVEL_TILE_PX;
           if (this._state === 'idle') {
+            // 侧房建在井底之下（ROOM_BASE_Y），在房间里时 y 必然小于 floorY。
+            // 所以必须先排除「在房间内」这个情况，否则一进侧门就会被当成通关。
+            if (this._room && this._room.inRoom) {
+              return;
+            }
             var py = this._playerY();
             if (py === null) {
               return;
