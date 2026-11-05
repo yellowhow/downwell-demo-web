@@ -105,7 +105,7 @@ System.register("chunks:///_virtual/AudioManager.ts", ['./rollupPluginModLoBabel
 });
 
 System.register("chunks:///_virtual/Bullet.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './TuningConfig.ts', './LevelData.ts'], function (exports) {
-  var _inheritsLoose, cclegacy, _decorator, UITransform, Graphics, Color, Component, getTuning, LEVEL_ROWS, LEVEL_GRID, LEVEL_COLS;
+  var _inheritsLoose, cclegacy, _decorator, UITransform, Graphics, Color, Component, getTuning, ROOM_ROWS, damageGemChunkAtWorld, solidAtWorld, crumbleHpAtWorld, damageAtWorld, ROOM_INSTANCES;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -119,9 +119,12 @@ System.register("chunks:///_virtual/Bullet.ts", ['./rollupPluginModLoBabelHelper
     }, function (module) {
       getTuning = module.getTuning;
     }, function (module) {
-      LEVEL_ROWS = module.LEVEL_ROWS;
-      LEVEL_GRID = module.LEVEL_GRID;
-      LEVEL_COLS = module.LEVEL_COLS;
+      ROOM_ROWS = module.ROOM_ROWS;
+      damageGemChunkAtWorld = module.damageGemChunkAtWorld;
+      solidAtWorld = module.solidAtWorld;
+      crumbleHpAtWorld = module.crumbleHpAtWorld;
+      damageAtWorld = module.damageAtWorld;
+      ROOM_INSTANCES = module.ROOM_INSTANCES;
     }],
     execute: function () {
       var _dec, _class;
@@ -173,7 +176,9 @@ System.register("chunks:///_virtual/Bullet.ts", ['./rollupPluginModLoBabelHelper
           this.node.setPosition(x0 + this.vx, y0 + this.vy);
           var x = this.node.position.x;
           var y = this.node.position.y;
-          if (y > 0 || y < -LEVEL_ROWS * tileSize) {
+          var lastRoom = ROOM_INSTANCES[ROOM_INSTANCES.length - 1];
+          var worldMinY = lastRoom.originY - ROOM_ROWS * tileSize;
+          if (y > 0 || y < worldMinY) {
             return true;
           }
           if (this._hitsSolid(x, y, tileSize)) {
@@ -186,15 +191,24 @@ System.register("chunks:///_virtual/Bullet.ts", ['./rollupPluginModLoBabelHelper
           var right = x + this._halfW;
           var bottom = y - this._halfH;
           var top = y + this._halfH;
-          var col0 = Math.max(0, Math.floor(left / tileSize));
-          var col1 = Math.min(LEVEL_COLS - 1, Math.floor((right - EPS) / tileSize));
-          var row0 = Math.max(0, Math.floor(-top / tileSize));
-          var row1 = Math.min(LEVEL_ROWS - 1, Math.floor((-bottom - EPS) / tileSize));
+          var col0 = Math.floor(left / tileSize);
+          var col1 = Math.floor((right - EPS) / tileSize);
+          var row0 = Math.floor(-top / tileSize);
+          var row1 = Math.floor((-bottom - EPS) / tileSize);
           for (var row = row0; row <= row1; row++) {
             for (var col = col0; col <= col1; col++) {
-              if (LEVEL_GRID[row][col] === 1) {
+              var cx = col * tileSize + tileSize / 2;
+              var cy = -row * tileSize - tileSize / 2;
+              if (damageGemChunkAtWorld(cx, cy) !== 'none') {
                 return true;
               }
+              if (!solidAtWorld(cx, cy)) {
+                continue;
+              }
+              if (crumbleHpAtWorld(cx, cy) > 0) {
+                damageAtWorld(cx, cy);
+              }
+              return true;
             }
           }
           return false;
@@ -850,8 +864,8 @@ System.register("chunks:///_virtual/DebugOverlay.ts", ['./rollupPluginModLoBabel
   };
 });
 
-System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './DebugOverlay.ts', './HitboxDebug.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Gunboots.ts', './ChargeBar.ts', './HeartHud.ts', './GameOver.ts', './ScoreHud.ts', './ComboHud.ts', './HudFrame.ts', './PlayerHealth.ts', './AudioManager.ts'], function (exports) {
-  var _inheritsLoose, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Node, view, settings, Component, DebugOverlay, HitboxDebug, FixedStepDriver, getTuning, getTuningSource, BulletPool, Gunboots, ChargeBar, HeartHud, GameOver, ScoreHud, ComboHud, HudFrame, PlayerHealth, AudioManager;
+System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './DebugOverlay.ts', './HitboxDebug.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Gunboots.ts', './ChargeBar.ts', './HeartHud.ts', './GameOver.ts', './ScoreHud.ts', './LevelHud.ts', './ComboHud.ts', './HudFrame.ts', './PlayerHealth.ts', './AudioManager.ts', './LevelFlow.ts'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Node, view, settings, Component, DebugOverlay, HitboxDebug, FixedStepDriver, getTuning, getTuningSource, BulletPool, Gunboots, ChargeBar, HeartHud, GameOver, ScoreHud, LevelHud, ComboHud, HudFrame, PlayerHealth, AudioManager, LevelFlow;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -889,6 +903,8 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
     }, function (module) {
       ScoreHud = module.ScoreHud;
     }, function (module) {
+      LevelHud = module.LevelHud;
+    }, function (module) {
       ComboHud = module.ComboHud;
     }, function (module) {
       HudFrame = module.HudFrame;
@@ -896,6 +912,8 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
       PlayerHealth = module.PlayerHealth;
     }, function (module) {
       AudioManager = module.AudioManager;
+    }, function (module) {
+      LevelFlow = module.LevelFlow;
     }],
     execute: function () {
       var _dec, _class;
@@ -951,6 +969,7 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
               _this._loadChargeBar(canvas);
               _this._loadHeartHud(canvas);
               _this._loadScoreHud(canvas);
+              _this._loadLevelHud(canvas);
               _this._loadComboHud(canvas);
               _this._loadGameOver(canvas);
             });
@@ -986,6 +1005,9 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
           node.setSiblingIndex(world.children.length - 1);
           if (!node.getComponent(HitboxDebug)) {
             node.addComponent(HitboxDebug);
+          }
+          if (world && !world.getComponent(LevelFlow)) {
+            world.addComponent(LevelFlow);
           }
         };
         _proto._loadChargeBar = function _loadChargeBar(canvas) {
@@ -1061,6 +1083,27 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
               node.setPosition(-46, 66);
               if (!node.getComponent(ScoreHud)) {
                 node.addComponent(ScoreHud);
+              }
+            });
+          });
+        };
+        _proto._loadLevelHud = function _loadLevelHud(canvas) {
+          assetManager.loadBundle('mainui', function (bundleErr, bundle) {
+            if (bundleErr || !bundle) {
+              console.error('[DebugOverlayLoader] loadBundle failed bundle=mainui for LevelHud', bundleErr);
+              return;
+            }
+            bundle.load('prefab/LevelHud', Prefab, function (loadErr, prefab) {
+              if (loadErr || !prefab) {
+                console.error('[DebugOverlayLoader] level hud prefab load failed: prefab/LevelHud');
+                return;
+              }
+              var node = instantiate(prefab);
+              canvas.addChild(node);
+              // GEMS 在 (-46,100)，LEVEL 放它右侧同一行
+              node.setPosition(46, 100);
+              if (!node.getComponent(LevelHud)) {
+                node.addComponent(LevelHud);
               }
             });
           });
@@ -1407,7 +1450,7 @@ System.register("chunks:///_virtual/Enemy.ts", ['./rollupPluginModLoBabelHelpers
 });
 
 System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './ComboTracker.ts', './Enemy.ts', './GemManager.ts', './LevelData.ts', './PlayerController.ts', './PlayerHealth.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, AudioManager, FixedStepDriver, getTuning, BulletPool, ComboTracker, Enemy, GemManager, PLATFORM_SPECS, platformTopY, LEVEL_ROWS, LEVEL_COLS, LEVEL_GRID, PlayerController, PlayerHealth;
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, AudioManager, FixedStepDriver, getTuning, BulletPool, ComboTracker, Enemy, GemManager, PLATFORM_SPECS, platformTopY, LEVEL_COLS, solidAtWorld, PlayerController, PlayerHealth;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -1438,9 +1481,8 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
     }, function (module) {
       PLATFORM_SPECS = module.PLATFORM_SPECS;
       platformTopY = module.platformTopY;
-      LEVEL_ROWS = module.LEVEL_ROWS;
       LEVEL_COLS = module.LEVEL_COLS;
-      LEVEL_GRID = module.LEVEL_GRID;
+      solidAtWorld = module.solidAtWorld;
     }, function (module) {
       PlayerController = module.PlayerController;
     }, function (module) {
@@ -1612,10 +1654,12 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
         _proto._step = function _step() {
           var tileSize = getTuning().level.tileSize;
           var isSolidAt = function isSolidAt(col, row) {
-            if (row < 0 || row >= LEVEL_ROWS || col < 0 || col >= LEVEL_COLS) {
+            if (col < 0 || col >= LEVEL_COLS) {
               return true;
             }
-            return LEVEL_GRID[row][col] === 1;
+            var cx = col * tileSize + tileSize / 2;
+            var cy = -row * tileSize - tileSize / 2;
+            return solidAtWorld(cx, cy);
           };
           for (var i = this._active.length - 1; i >= 0; i -= 1) {
             var enemy = this._active[i];
@@ -2220,8 +2264,8 @@ System.register("chunks:///_virtual/Gem.ts", ['./rollupPluginModLoBabelHelpers.j
   };
 });
 
-System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './FixedStepDriver.ts', './TuningConfig.ts', './LevelData.ts', './Gem.ts', './Gunboots.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, AudioManager, FixedStepDriver, getTuning, LEVEL_ROWS, LEVEL_COLS, LEVEL_GRID, Gem, Gunboots;
+System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './RunState.ts', './FixedStepDriver.ts', './TuningConfig.ts', './LevelData.ts', './Gem.ts', './Gunboots.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Component, AudioManager, runState, FixedStepDriver, getTuning, LEVEL_ROWS, LEVEL_COLS, LEVEL_GRID, Gem, Gunboots;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -2237,6 +2281,8 @@ System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHe
       Component = module.Component;
     }, function (module) {
       AudioManager = module.AudioManager;
+    }, function (module) {
+      runState = module.runState;
     }, function (module) {
       FixedStepDriver = module.FixedStepDriver;
     }, function (module) {
@@ -2268,14 +2314,13 @@ System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHe
           _this._active = [];
           _this._poolReady = false;
           _this._stepBound = false;
-          _this._score = 0;
           _this._gunboots = null;
           _this._audio = null;
           return _this;
         }
         var _proto = GemManager.prototype;
         _proto.resetScore = function resetScore() {
-          this._score = 0;
+          runState.score = 0;
         };
         _proto.onLoad = function onLoad() {
           var _this2 = this,
@@ -2397,7 +2442,7 @@ System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHe
             var gy = _gem.node.position.y;
             if (Math.abs(gx - px) < ghw + phw && Math.abs(gy - py) < ghh + phh) {
               var _this$_audio, _this$_gunboots;
-              this._score += _gem.score;
+              runState.score += _gem.score;
               (_this$_audio = this._audio) == null || _this$_audio.play('gem_get');
               (_this$_gunboots = this._gunboots) == null || _this$_gunboots.addCharge(chargePerGem);
               this._recycle(_gem);
@@ -2415,7 +2460,7 @@ System.register("chunks:///_virtual/GemManager.ts", ['./rollupPluginModLoBabelHe
         _createClass(GemManager, [{
           key: "score",
           get: function get() {
-            return this._score;
+            return runState.score;
           }
         }]);
         return GemManager;
@@ -2530,10 +2575,13 @@ System.register("chunks:///_virtual/Gunboots.ts", ['./rollupPluginModLoBabelHelp
 
           /** 只有离地才能开火（用户拍板） */
           var fireAllowed = inputState.fireHeld && !grounded;
+
+          /** 真正在射击 = 有输入 + 离地 + 有充能；悬停钳制与 shoot 动画都依赖它 */
+          var actuallyFiring = fireAllowed && this._charge >= g.chargeCostPerShot;
           if (this._player) {
-            this._player.firingHeld = fireAllowed;
+            this._player.firingHeld = actuallyFiring;
           }
-          if (fireAllowed && this._cooldown <= 0 && this._charge >= g.chargeCostPerShot) {
+          if (actuallyFiring && this._cooldown <= 0 && this._charge >= g.chargeCostPerShot) {
             var _this$_audio, _this$_player;
             this._charge -= g.chargeCostPerShot;
             (_this$_audio = this._audio) == null || _this$_audio.play('gun');
@@ -3192,75 +3240,226 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
     execute: function () {
       exports({
         assertLevel: assertLevel,
-        platformTopY: platformTopY
+        bottomPortalCenter: bottomPortalCenter,
+        buildRoomGrid: buildRoomGrid,
+        consumeCrumbleEvents: consumeCrumbleEvents,
+        consumeGemChunkEvents: consumeGemChunkEvents,
+        crumbleHpAtWorld: crumbleHpAtWorld,
+        damageAtWorld: damageAtWorld,
+        damageCell: damageCell,
+        damageGemChunkAtWorld: damageGemChunkAtWorld,
+        platformTopY: platformTopY,
+        solidAtWorld: solidAtWorld
       });
       cclegacy._RF.push({}, "e7c3dkaK09OCJxtGlt+DyxI", "LevelData", undefined);
-      /** 手摆竖井：16px 格（sprTile1），10 列 × 53 行 = 848px 高，与旧 106×8 同高。 */
-      var LEVEL_COLS = exports('LEVEL_COLS', 10);
+      /** 手摆竖井：16px 格（sprTile1），11 列 × 53 行；内宽 9 格（144px），墙厚 1 格。 */
+      var LEVEL_COLS = exports('LEVEL_COLS', 11);
       var LEVEL_ROWS = exports('LEVEL_ROWS', 53);
       var LEVEL_TILE_PX = exports('LEVEL_TILE_PX', 16);
-      var WALL_THICKNESS = 2;
+      var WALL_THICKNESS = exports('WALL_THICKNESS', 1);
       var FLOOR_START_ROW = 50;
-      var PLAYABLE_COL0 = WALL_THICKNESS;
-      var PLAYABLE_COL1 = LEVEL_COLS - WALL_THICKNESS - 1; // 7
+      var PLAYABLE_COL0 = exports('PLAYABLE_COL0', 1);
+      var PLAYABLE_COL1 = exports('PLAYABLE_COL1', LEVEL_COLS - WALL_THICKNESS - 1); // 9
 
+      /** 世界整体水平偏移：176px 宽的世界在 160px 视口里居中（只影响渲染，物理坐标不动） */
+      var LEVEL_VIEW_OFFSET_X = exports('LEVEL_VIEW_OFFSET_X', -8);
       /** 11 层落脚平台：行距 4 行（64px），侧别 left → right → middle 循环。 */
       var PLATFORM_SPECS = exports('PLATFORM_SPECS', [{
         row: 6,
         side: 'left',
-        col0: 2,
+        col0: 1,
         len: 3
       }, {
         row: 10,
         side: 'right',
-        col0: 5,
+        col0: 7,
         len: 3
       }, {
         row: 14,
         side: 'middle',
         col0: 4,
-        len: 2
+        len: 3
       }, {
         row: 18,
         side: 'left',
-        col0: 2,
+        col0: 1,
         len: 3
       }, {
         row: 22,
         side: 'right',
-        col0: 5,
+        col0: 7,
         len: 3
       }, {
         row: 26,
         side: 'middle',
         col0: 4,
-        len: 2
+        len: 3
       }, {
         row: 30,
         side: 'left',
-        col0: 2,
+        col0: 1,
         len: 3
       }, {
         row: 34,
         side: 'right',
-        col0: 5,
+        col0: 7,
         len: 3
       }, {
         row: 38,
         side: 'middle',
         col0: 4,
-        len: 2
+        len: 3
       }, {
         row: 42,
         side: 'left',
-        col0: 2,
+        col0: 1,
         len: 3
       }, {
         row: 46,
         side: 'right',
+        col0: 7,
+        len: 3
+      }]);
+
+      /** 6 块薄板：每 12 行一块，左右交替，与厚平台错开 */
+      var THIN_PLATFORM_SPECS = exports('THIN_PLATFORM_SPECS', [{
+        row: 8,
+        col0: 5,
+        len: 3
+      }, {
+        row: 20,
+        col0: 2,
+        len: 3
+      }, {
+        row: 32,
+        col0: 5,
+        len: 3
+      }, {
+        row: 44,
+        col0: 2,
+        len: 3
+      }, {
+        row: 12,
+        col0: 2,
+        len: 3
+      }, {
+        row: 24,
         col0: 5,
         len: 3
       }]);
+
+      /** 薄板碰撞厚度（只有玩家从上方落下时才算实心） */
+      var THIN_PLATFORM_THICKNESS = exports('THIN_PLATFORM_THICKNESS', 4);
+
+      /** 与 TuningConfig DEFAULT_TUNING.crumble.hp / gemChunk.hp / tuning.json 默认值同步（编译期不可读 tuning）。 */
+      var CRUMBLE_HP_MAX = exports('CRUMBLE_HP_MAX', 3);
+      /**
+       * 房间里的宝石堆：2×2 格，3 发打碎，碎后爆 4 颗宝石。
+       * 放在房间地面上（row 15 是地面上一格，所以堆底 row 16）。
+       */
+      var GEM_CHUNKS = exports('GEM_CHUNKS', [{
+        roomIndex: 0,
+        row: 9,
+        col: 7
+      }, {
+        roomIndex: 0,
+        row: 14,
+        col: 5
+      }, {
+        roomIndex: 1,
+        row: 9,
+        col: 7
+      }, {
+        roomIndex: 1,
+        row: 14,
+        col: 5
+      }, {
+        roomIndex: 2,
+        row: 9,
+        col: 7
+      }, {
+        roomIndex: 2,
+        row: 14,
+        col: 5
+      }]);
+      var GEM_CHUNK_STATES = exports('GEM_CHUNK_STATES', GEM_CHUNKS.map(function (spec) {
+        return {
+          spec: spec,
+          hp: CRUMBLE_HP_MAX
+        };
+      }));
+      var gemChunkEvents = [];
+      function consumeGemChunkEvents() {
+        if (gemChunkEvents.length === 0) {
+          return [];
+        }
+        var out = gemChunkEvents.slice();
+        gemChunkEvents.length = 0;
+        return out;
+      }
+      function gemChunkCenterWorld(spec) {
+        var room = ROOM_INSTANCES[spec.roomIndex];
+        return {
+          x: spec.col * LEVEL_TILE_PX + LEVEL_TILE_PX,
+          y: room.originY - spec.row * LEVEL_TILE_PX - LEVEL_TILE_PX
+        };
+      }
+      function gemChunkAabb(spec) {
+        var room = ROOM_INSTANCES[spec.roomIndex];
+        var left = spec.col * LEVEL_TILE_PX;
+        var right = left + LEVEL_TILE_PX * 2;
+        var top = room.originY - spec.row * LEVEL_TILE_PX;
+        var bottom = top - LEVEL_TILE_PX * 2;
+        return {
+          left: left,
+          right: right,
+          top: top,
+          bottom: bottom
+        };
+      }
+      function pointInGemChunkAabb(x, y, spec) {
+        var _gemChunkAabb = gemChunkAabb(spec),
+          left = _gemChunkAabb.left,
+          right = _gemChunkAabb.right,
+          top = _gemChunkAabb.top,
+          bottom = _gemChunkAabb.bottom;
+        return x >= left && x < right && y <= top && y > bottom;
+      }
+
+      /**
+       * 世界坐标是否命中某个宝石堆（AABB，2×2 格 = 32×32）。
+       * 命中且未碎则扣血，返回 'none' | 'hit' | 'destroyed'。
+       */
+      function damageGemChunkAtWorld(x, y) {
+        for (var i = 0; i < GEM_CHUNK_STATES.length; i += 1) {
+          var state = GEM_CHUNK_STATES[i];
+          if (state.hp <= 0) {
+            continue;
+          }
+          if (!pointInGemChunkAabb(x, y, state.spec)) {
+            continue;
+          }
+          state.hp -= 1;
+          var center = gemChunkCenterWorld(state.spec);
+          if (state.hp > 0) {
+            gemChunkEvents.push({
+              index: i,
+              kind: 'hit',
+              x: center.x,
+              y: center.y
+            });
+            return 'hit';
+          }
+          gemChunkEvents.push({
+            index: i,
+            kind: 'destroyed',
+            x: center.x,
+            y: center.y
+          });
+          return 'destroyed';
+        }
+        return 'none';
+      }
 
       /**
        * 平台顶面 y：第 R 行格子占 y ∈ [-(R+1)*LEVEL_TILE_PX, -R*LEVEL_TILE_PX]，顶边为 -R*LEVEL_TILE_PX。
@@ -3273,6 +3472,40 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
           grid[spec.row][spec.col0 + i] = 1;
         }
       }
+      /** 井壁上开的侧门：挂在右墙内侧，3 个 */
+      var SIDE_PORTS = exports('SIDE_PORTS', [{
+        roomIndex: 0,
+        col: 9,
+        row: 15
+      }, {
+        roomIndex: 1,
+        col: 1,
+        row: 29
+      }, {
+        roomIndex: 2,
+        col: 9,
+        row: 43
+      }]);
+
+      /** 井底传送门所在的列（地面上挖空，玩家从这里掉下去进下一关） */
+      var BOTTOM_PORTAL_COLS = exports('BOTTOM_PORTAL_COLS', [4, 5, 6]);
+      /**
+       * 房间出口：踩上去回到进房前的井内位置。
+       * 放在房间右下角，与入口（顶部 col4~6）拉开距离，玩家必须主动横走过去。
+       */
+      var ROOM_EXITS = exports('ROOM_EXITS', [{
+        roomIndex: 0,
+        row: 15,
+        col: 9
+      }, {
+        roomIndex: 1,
+        row: 15,
+        col: 1
+      }, {
+        roomIndex: 2,
+        row: 15,
+        col: 9
+      }]);
       function buildLevelGrid() {
         var grid = [];
         for (var row = 0; row < LEVEL_ROWS; row++) {
@@ -3288,13 +3521,271 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
           var spec = _PLATFORM_SPECS[_i];
           applyPlatformSpec(grid, spec);
         }
+        for (var _i2 = 0, _SIDE_PORTS = SIDE_PORTS; _i2 < _SIDE_PORTS.length; _i2++) {
+          var port = _SIDE_PORTS[_i2];
+          grid[port.row][port.col] = 0;
+        }
+        // 地面是 FLOOR_START_ROW..LEVEL_ROWS-1 共 3 行，必须整层挖穿，否则玩家踩在上面掉不下去
+        for (var _row = FLOOR_START_ROW; _row < LEVEL_ROWS; _row += 1) {
+          for (var _i3 = 0, _BOTTOM_PORTAL_COLS = BOTTOM_PORTAL_COLS; _i3 < _BOTTOM_PORTAL_COLS.length; _i3++) {
+            var _col = _BOTTOM_PORTAL_COLS[_i3];
+            grid[_row][_col] = 0;
+          }
+        }
         return grid;
       }
-      var LEVEL_GRID = exports('LEVEL_GRID', buildLevelGrid());
 
-      /** 出生点：第 2 行、水平居中。坐标原点在井顶左上角，y 向下为负。 */
+      /** 井底传送门中心的世界坐标 */
+      function bottomPortalCenter() {
+        var mid = BOTTOM_PORTAL_COLS[1];
+        return {
+          x: mid * LEVEL_TILE_PX + LEVEL_TILE_PX / 2,
+          y: -FLOOR_START_ROW * LEVEL_TILE_PX - LEVEL_TILE_PX / 2
+        };
+      }
+      var LEVEL_GRID = exports('LEVEL_GRID', buildLevelGrid());
+      var ROOM_COLS = exports('ROOM_COLS', 11);
+      var ROOM_ROWS = exports('ROOM_ROWS', 17);
+      var ROOM_BASE_Y = exports('ROOM_BASE_Y', -1100);
+      var ROOM_GAP = exports('ROOM_GAP', 64);
+      var ROOM_CRUMBLE_SPECS = [{
+        row: 6,
+        col0: 1,
+        len: 3
+      }, {
+        row: 11,
+        col0: 7,
+        len: 3
+      }, {
+        row: 13,
+        col0: 2,
+        len: 3
+      }];
+
+      /** 房间布局：四周墙 + 底 + 顶入口 + 可破坏薄台 */
+      function buildRoomGrid() {
+        var grid = [];
+        for (var row = 0; row < ROOM_ROWS; row += 1) {
+          var cells = [];
+          for (var col = 0; col < ROOM_COLS; col += 1) {
+            var solid = 0;
+            if (col === 0 || col === ROOM_COLS - 1) {
+              solid = 1;
+            } else if (row === ROOM_ROWS - 1) {
+              solid = 1;
+            } else if (row === 0) {
+              solid = col === 4 || col === 5 || col === 6 ? 0 : 1;
+            }
+            cells.push(solid);
+          }
+          grid.push(cells);
+        }
+        for (var _iterator = _createForOfIteratorHelperLoose(ROOM_CRUMBLE_SPECS), _step; !(_step = _iterator()).done;) {
+          var spec = _step.value;
+          for (var i = 0; i < spec.len; i += 1) {
+            grid[spec.row][spec.col0 + i] = 1;
+          }
+        }
+        for (var _iterator2 = _createForOfIteratorHelperLoose(ROOM_EXITS), _step2; !(_step2 = _iterator2()).done;) {
+          var exit = _step2.value;
+          grid[exit.row][exit.col] = 0;
+        }
+        return grid;
+      }
+      function buildRoomCrumble(grid) {
+        var table = [];
+        for (var row = 0; row < ROOM_ROWS; row += 1) {
+          var cells = [];
+          for (var col = 0; col < ROOM_COLS; col += 1) {
+            cells.push(0);
+          }
+          table.push(cells);
+        }
+        for (var _i4 = 0, _ROOM_CRUMBLE_SPECS = ROOM_CRUMBLE_SPECS; _i4 < _ROOM_CRUMBLE_SPECS.length; _i4++) {
+          var spec = _ROOM_CRUMBLE_SPECS[_i4];
+          for (var i = 0; i < spec.len; i += 1) {
+            table[spec.row][spec.col0 + i] = CRUMBLE_HP_MAX;
+          }
+        }
+        return table;
+      }
+      function buildRoomInstances() {
+        var rooms = [];
+        var stride = ROOM_ROWS * LEVEL_TILE_PX + ROOM_GAP;
+        for (var i = 0; i < 3; i += 1) {
+          var grid = buildRoomGrid();
+          rooms.push({
+            index: i,
+            originY: ROOM_BASE_Y - i * stride,
+            grid: grid,
+            crumble: buildRoomCrumble(),
+            kind: 'gem'
+          });
+        }
+        return rooms;
+      }
+      var ROOM_INSTANCES = exports('ROOM_INSTANCES', buildRoomInstances());
+      function buildCrumbleTable() {
+        var table = [];
+        for (var row = 0; row < LEVEL_ROWS; row += 1) {
+          var cells = [];
+          for (var col = 0; col < LEVEL_COLS; col += 1) {
+            cells.push(0);
+          }
+          table.push(cells);
+        }
+        for (var _i5 = 0, _PLATFORM_SPECS2 = PLATFORM_SPECS; _i5 < _PLATFORM_SPECS2.length; _i5++) {
+          var spec = _PLATFORM_SPECS2[_i5];
+          for (var i = 0; i < spec.len; i += 1) {
+            table[spec.row][spec.col0 + i] = CRUMBLE_HP_MAX;
+          }
+        }
+        return table;
+      }
+
+      /**
+       * 每格可承受的子弹数；0 = 不可破坏。
+       * 只有 PLATFORM_SPECS 摆出来的厚平台可破坏，墙体/井底不可破坏。
+       */
+      var LEVEL_CRUMBLE = exports('LEVEL_CRUMBLE', buildCrumbleTable());
+      var crumbleEvents = [];
+
+      /** LevelView 每帧取走全部事件并做视觉表现 */
+      function consumeCrumbleEvents() {
+        if (crumbleEvents.length === 0) {
+          return [];
+        }
+        var out = crumbleEvents.slice();
+        crumbleEvents.length = 0;
+        return out;
+      }
+
+      /** 被打中一次；返回 'none' | 'hit' | 'destroyed' */
+      function damageCell(row, col) {
+        if (row < 0 || row >= LEVEL_ROWS || col < 0 || col >= LEVEL_COLS) {
+          return 'none';
+        }
+        if (LEVEL_CRUMBLE[row][col] === 0) {
+          return 'none';
+        }
+        LEVEL_CRUMBLE[row][col] -= 1;
+        if (LEVEL_CRUMBLE[row][col] > 0) {
+          crumbleEvents.push({
+            row: row,
+            col: col,
+            kind: 'hit'
+          });
+          return 'hit';
+        }
+        LEVEL_GRID[row][col] = 0;
+        LEVEL_CRUMBLE[row][col] = 0;
+        crumbleEvents.push({
+          row: row,
+          col: col,
+          kind: 'destroyed'
+        });
+        return 'destroyed';
+      }
+      function resolveWorldCell(x, y) {
+        var col = Math.floor(x / LEVEL_TILE_PX);
+        if (col < 0 || col >= LEVEL_COLS) {
+          return null;
+        }
+        if (y <= 0 && y > -LEVEL_ROWS * LEVEL_TILE_PX) {
+          var row = Math.floor(-y / LEVEL_TILE_PX);
+          if (row < 0 || row >= LEVEL_ROWS) {
+            return null;
+          }
+          return {
+            zone: 'well',
+            row: row,
+            col: col
+          };
+        }
+        var roomH = ROOM_ROWS * LEVEL_TILE_PX;
+        for (var _iterator3 = _createForOfIteratorHelperLoose(ROOM_INSTANCES), _step3; !(_step3 = _iterator3()).done;) {
+          var room = _step3.value;
+          if (y <= room.originY && y > room.originY - roomH) {
+            var _row2 = Math.floor((room.originY - y) / LEVEL_TILE_PX);
+            if (_row2 < 0 || _row2 >= ROOM_ROWS) {
+              continue;
+            }
+            return {
+              zone: 'room',
+              row: _row2,
+              col: col,
+              roomIndex: room.index
+            };
+          }
+        }
+        return null;
+      }
+
+      /** 世界坐标 (x, y) 是否实心。子弹、玩家、敌人都改用它 */
+      function solidAtWorld(x, y) {
+        var cell = resolveWorldCell(x, y);
+        if (!cell) {
+          return false;
+        }
+        if (cell.zone === 'well') {
+          return LEVEL_GRID[cell.row][cell.col] === 1;
+        }
+        var room = ROOM_INSTANCES[cell.roomIndex];
+        return room.grid[cell.row][cell.col] === 1;
+      }
+
+      /** 世界坐标处可破坏格的剩余血量；0 = 不可破坏或已破坏 */
+      function crumbleHpAtWorld(x, y) {
+        var cell = resolveWorldCell(x, y);
+        if (!cell) {
+          return 0;
+        }
+        if (cell.zone === 'well') {
+          return LEVEL_CRUMBLE[cell.row][cell.col];
+        }
+        return ROOM_INSTANCES[cell.roomIndex].crumble[cell.row][cell.col];
+      }
+      function damageRoomCell(roomIndex, row, col) {
+        var room = ROOM_INSTANCES[roomIndex];
+        if (room.crumble[row][col] === 0) {
+          return 'none';
+        }
+        room.crumble[row][col] -= 1;
+        if (room.crumble[row][col] > 0) {
+          crumbleEvents.push({
+            row: row,
+            col: col,
+            kind: 'hit',
+            roomIndex: roomIndex
+          });
+          return 'hit';
+        }
+        room.grid[row][col] = 0;
+        room.crumble[row][col] = 0;
+        crumbleEvents.push({
+          row: row,
+          col: col,
+          kind: 'destroyed',
+          roomIndex: roomIndex
+        });
+        return 'destroyed';
+      }
+
+      /** 世界坐标处打一次；内部换算到井/房间后调用 damageCell 的等价逻辑 */
+      function damageAtWorld(x, y) {
+        var cell = resolveWorldCell(x, y);
+        if (!cell) {
+          return 'none';
+        }
+        if (cell.zone === 'well') {
+          return damageCell(cell.row, cell.col);
+        }
+        return damageRoomCell(cell.roomIndex, cell.row, cell.col);
+      }
+
+      /** 出生点：第 2 行、9 格内宽水平居中（x 16~160，中心 88）。 */
       var SPAWN_POS = exports('SPAWN_POS', {
-        x: 80,
+        x: 88,
         y: -32
       });
       function maxConsecutiveEmptyInPlayable(row) {
@@ -3313,6 +3804,30 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
         return best;
       }
       function assertLevel() {
+        if (LEVEL_GRID.length !== LEVEL_ROWS) {
+          console.error("[LevelData] LEVEL_GRID rows " + LEVEL_GRID.length + " !== " + LEVEL_ROWS);
+        }
+        for (var row = 0; row < LEVEL_GRID.length; row++) {
+          if (LEVEL_GRID[row].length !== LEVEL_COLS) {
+            console.error("[LevelData] row " + row + " length " + LEVEL_GRID[row].length + " !== " + LEVEL_COLS);
+          }
+        }
+        var leftWallCols = 0;
+        var rightWallCols = 0;
+        for (var col = 0; col < LEVEL_COLS; col++) {
+          if (LEVEL_GRID[0][col] === 1) {
+            if (col < PLAYABLE_COL0) {
+              leftWallCols += 1;
+            } else if (col > PLAYABLE_COL1) {
+              rightWallCols += 1;
+            }
+          }
+        }
+        var playableWidth = PLAYABLE_COL1 - PLAYABLE_COL0 + 1;
+        if (leftWallCols !== WALL_THICKNESS || rightWallCols !== WALL_THICKNESS || playableWidth !== 9) {
+          console.error("[LevelData] wall/playable mismatch left=" + leftWallCols + " right=" + rightWallCols + " playable=" + playableWidth);
+        }
+        console.log("[LevelData] cols=" + LEVEL_COLS + " wall=" + WALL_THICKNESS + " playable=" + playableWidth + " rows=" + LEVEL_ROWS);
         var spawnCol = Math.floor(SPAWN_POS.x / LEVEL_TILE_PX);
         var spawnRow = Math.floor(-SPAWN_POS.y / LEVEL_TILE_PX);
         if (spawnRow < 0 || spawnRow >= LEVEL_ROWS || spawnCol < 0 || spawnCol >= LEVEL_COLS) {
@@ -3320,26 +3835,131 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
         } else if (LEVEL_GRID[spawnRow][spawnCol] === 1) {
           console.error("[LevelData] spawn sits in solid at row " + spawnRow + " col " + spawnCol);
         }
-        for (var row = 0; row <= 5; row++) {
-          for (var col = PLAYABLE_COL0; col <= PLAYABLE_COL1; col++) {
-            if (LEVEL_GRID[row][col] === 1) {
-              console.error("[LevelData] row 0~5 must be empty in playable cols; solid at row " + row + " col " + col);
+        for (var _row3 = 0; _row3 <= 5; _row3++) {
+          for (var _col2 = PLAYABLE_COL0; _col2 <= PLAYABLE_COL1; _col2++) {
+            if (LEVEL_GRID[_row3][_col2] === 1) {
+              console.error("[LevelData] row 0~5 must be empty in playable cols; solid at row " + _row3 + " col " + _col2);
             }
           }
         }
-        for (var _row = 0; _row < FLOOR_START_ROW; _row++) {
-          var maxEmpty = maxConsecutiveEmptyInPlayable(LEVEL_GRID[_row]);
+        for (var _row4 = 0; _row4 < FLOOR_START_ROW; _row4++) {
+          var maxEmpty = maxConsecutiveEmptyInPlayable(LEVEL_GRID[_row4]);
           if (maxEmpty < 2) {
-            console.error("[LevelData] row " + _row + " has no run of 2+ consecutive empty tiles in playable cols (max=" + maxEmpty + ")");
+            console.error("[LevelData] row " + _row4 + " has no run of 2+ consecutive empty tiles in playable cols (max=" + maxEmpty + ")");
           }
         }
-        for (var _iterator = _createForOfIteratorHelperLoose(PLATFORM_SPECS), _step; !(_step = _iterator()).done;) {
-          var spec = _step.value;
+        for (var _iterator4 = _createForOfIteratorHelperLoose(PLATFORM_SPECS), _step4; !(_step4 = _iterator4()).done;) {
+          var spec = _step4.value;
           var colEnd = spec.col0 + spec.len - 1;
           if (spec.col0 < PLAYABLE_COL0 || colEnd > PLAYABLE_COL1) {
             console.error("[LevelData] platform at row " + spec.row + " out of playable cols: col0=" + spec.col0 + " len=" + spec.len);
           }
         }
+        if (ROOM_INSTANCES.length !== 3) {
+          console.error("[LevelData] ROOM_INSTANCES.length " + ROOM_INSTANCES.length + " !== 3");
+        }
+        for (var _iterator5 = _createForOfIteratorHelperLoose(ROOM_INSTANCES), _step5; !(_step5 = _iterator5()).done;) {
+          var room = _step5.value;
+          if (room.grid.length !== ROOM_ROWS) {
+            console.error("[LevelData] room " + room.index + " grid rows " + room.grid.length + " !== " + ROOM_ROWS);
+          }
+          for (var r = 0; r < room.grid.length; r += 1) {
+            if (room.grid[r].length !== ROOM_COLS) {
+              console.error("[LevelData] room " + room.index + " row " + r + " length " + room.grid[r].length + " !== " + ROOM_COLS);
+            }
+          }
+        }
+        for (var _iterator6 = _createForOfIteratorHelperLoose(SIDE_PORTS), _step6; !(_step6 = _iterator6()).done;) {
+          var port = _step6.value;
+          var _cx = port.col * LEVEL_TILE_PX + LEVEL_TILE_PX / 2;
+          var _cy = -port.row * LEVEL_TILE_PX - LEVEL_TILE_PX / 2;
+          if (solidAtWorld(_cx, _cy)) {
+            console.error("[LevelData] SIDE_PORT row=" + port.row + " col=" + port.col + " not carved (solid)");
+          }
+        }
+        if (ROOM_EXITS.length !== 3) {
+          console.error("[LevelData] ROOM_EXITS.length " + ROOM_EXITS.length + " !== 3");
+        }
+        // 出口格必须可穿越（挖空）
+        for (var _iterator7 = _createForOfIteratorHelperLoose(ROOM_EXITS), _step7; !(_step7 = _iterator7()).done;) {
+          var exit = _step7.value;
+          var _room = ROOM_INSTANCES[exit.roomIndex];
+          if (!_room) {
+            console.error("[LevelData] ROOM_EXIT missing room " + exit.roomIndex);
+            continue;
+          }
+          var _cy2 = _room.originY - exit.row * LEVEL_TILE_PX - LEVEL_TILE_PX / 2;
+          var _cx2 = exit.col * LEVEL_TILE_PX + LEVEL_TILE_PX / 2;
+          if (solidAtWorld(_cx2, _cy2)) {
+            console.error("[LevelData] room exit " + exit.roomIndex + " (" + exit.row + "," + exit.col + ") is still solid");
+          }
+        }
+        console.log("[LevelData] exits cleared=" + ROOM_EXITS.length);
+        console.log("[LevelData] rooms=3 exits=3");
+        if (GEM_CHUNKS.length !== 6) {
+          console.error("[LevelData] GEM_CHUNKS.length " + GEM_CHUNKS.length + " !== 6");
+        }
+        var _loop = function _loop() {
+          var spec = GEM_CHUNKS[ci];
+          for (var dr = 0; dr < 2; dr += 1) {
+            for (var dc = 0; dc < 2; dc += 1) {
+              var _row6 = spec.row + dr;
+              var _col4 = spec.col + dc;
+              var _cx3 = _col4 * LEVEL_TILE_PX + LEVEL_TILE_PX / 2;
+              var _cy3 = ROOM_INSTANCES[spec.roomIndex].originY - _row6 * LEVEL_TILE_PX - LEVEL_TILE_PX / 2;
+              if (solidAtWorld(_cx3, _cy3)) {
+                console.error("[LevelData] gem chunk " + ci + " cell (" + _row6 + "," + _col4 + ") is solid (blocks movement)");
+              }
+            }
+          }
+          var exit = ROOM_EXITS.find(function (e) {
+            return e.roomIndex === spec.roomIndex;
+          });
+          if (exit) {
+            for (var _dr = 0; _dr < 2; _dr += 1) {
+              for (var _dc = 0; _dc < 2; _dc += 1) {
+                var _row7 = spec.row + _dr;
+                var _col5 = spec.col + _dc;
+                if (_row7 === exit.row && _col5 === exit.col) {
+                  console.error("[LevelData] gem chunk " + ci + " overlaps room exit at (" + exit.row + "," + exit.col + ")");
+                }
+              }
+            }
+          }
+        };
+        for (var ci = 0; ci < GEM_CHUNKS.length; ci += 1) {
+          _loop();
+        }
+        // 宝石堆正上方必须没有实心格，否则子弹打不到（只能从上往下打）
+        for (var _iterator8 = _createForOfIteratorHelperLoose(GEM_CHUNKS), _step8; !(_step8 = _iterator8()).done;) {
+          var _spec = _step8.value;
+          var _room2 = ROOM_INSTANCES[_spec.roomIndex];
+          var minRow = Math.max(0, _spec.row - 8);
+          for (var _row8 = _spec.row - 1; _row8 >= minRow; _row8 -= 1) {
+            for (var c = _spec.col; c < _spec.col + 2; c += 1) {
+              if (_room2.grid[_row8][c] === 1) {
+                console.error("[LevelData] gemChunk r" + _spec.roomIndex + " (" + _spec.row + "," + _spec.col + ") blocked at (" + _row8 + "," + c + ")");
+              }
+            }
+          }
+        }
+        console.log("[LevelData] gemChunk lanes clear=" + GEM_CHUNKS.length);
+        console.log("[LevelData] gemChunks=" + GEM_CHUNKS.length);
+        var bp = bottomPortalCenter();
+        if (solidAtWorld(bp.x, bp.y)) {
+          console.error("[LevelData] bottom portal center (" + bp.x + "," + bp.y + ") is solid");
+        }
+        for (var _row5 = FLOOR_START_ROW; _row5 < LEVEL_ROWS; _row5 += 1) {
+          for (var _iterator9 = _createForOfIteratorHelperLoose(BOTTOM_PORTAL_COLS), _step9; !(_step9 = _iterator9()).done;) {
+            var _col3 = _step9.value;
+            var cx = _col3 * LEVEL_TILE_PX + LEVEL_TILE_PX / 2;
+            var cy = -_row5 * LEVEL_TILE_PX - LEVEL_TILE_PX / 2;
+            if (solidAtWorld(cx, cy)) {
+              console.error("[LevelData] bottom portal row " + _row5 + " col " + _col3 + " center is solid");
+            }
+          }
+        }
+        console.log('[LevelData] bottom portal open 3x3 at cols=4,5,6');
       }
       assertLevel();
       cclegacy._RF.pop();
@@ -3347,53 +3967,323 @@ System.register("chunks:///_virtual/LevelData.ts", ['./rollupPluginModLoBabelHel
   };
 });
 
-System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './LevelData.ts'], function (exports) {
-  var _inheritsLoose, cclegacy, _decorator, Graphics, assetManager, Prefab, instantiate, Sprite, Color, SpriteFrame, Component, assertLevel, LEVEL_GRID, LEVEL_TILE_PX;
+System.register("chunks:///_virtual/LevelFlow.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './RunState.ts', './TuningConfig.ts', './LevelData.ts', './PlayerController.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, Node, Layers, UITransform, UIOpacity, assetManager, SpriteFrame, Sprite, Color, director, Component, FixedStepDriver, runState, getTuning, LEVEL_ROWS, LEVEL_TILE_PX, PlayerController;
+  return {
+    setters: [function (module) {
+      _inheritsLoose = module.inheritsLoose;
+      _createClass = module.createClass;
+    }, function (module) {
+      cclegacy = module.cclegacy;
+      _decorator = module._decorator;
+      find = module.find;
+      Node = module.Node;
+      Layers = module.Layers;
+      UITransform = module.UITransform;
+      UIOpacity = module.UIOpacity;
+      assetManager = module.assetManager;
+      SpriteFrame = module.SpriteFrame;
+      Sprite = module.Sprite;
+      Color = module.Color;
+      director = module.director;
+      Component = module.Component;
+    }, function (module) {
+      FixedStepDriver = module.FixedStepDriver;
+    }, function (module) {
+      runState = module.runState;
+    }, function (module) {
+      getTuning = module.getTuning;
+    }, function (module) {
+      LEVEL_ROWS = module.LEVEL_ROWS;
+      LEVEL_TILE_PX = module.LEVEL_TILE_PX;
+    }, function (module) {
+      PlayerController = module.PlayerController;
+    }],
+    execute: function () {
+      var _dec, _class;
+      cclegacy._RF.push({}, "3e17awdU3hMeblk33qmOY3c", "LevelFlow", undefined);
+      var ccclass = _decorator.ccclass;
+      var LevelFlow = exports('LevelFlow', (_dec = ccclass('LevelFlow'), _dec(_class = /*#__PURE__*/function (_Component) {
+        _inheritsLoose(LevelFlow, _Component);
+        function LevelFlow() {
+          var _this;
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+          _this = _Component.call.apply(_Component, [this].concat(args)) || this;
+          _this._state = 'idle';
+          _this._t = 0;
+          _this._loadSceneCalled = false;
+          _this._stepBound = false;
+          _this._fadeOverlay = null;
+          _this._fadeOpacity = null;
+          return _this;
+        }
+        var _proto = LevelFlow.prototype;
+        _proto.onLoad = function onLoad() {
+          this._createFadeOverlay();
+          this._bindStep();
+          if (typeof window !== 'undefined') {
+            window.__dwLevelFlow = this;
+          }
+        };
+        _proto._createFadeOverlay = function _createFadeOverlay() {
+          var canvas = find('Canvas');
+          if (!canvas) {
+            console.error('[LevelFlow] Canvas not found for FadeOverlay');
+            return;
+          }
+          var node = new Node('FadeOverlay');
+          node.layer = Layers.Enum.UI_2D;
+          canvas.addChild(node);
+          node.setSiblingIndex(canvas.children.length - 1);
+          var ut = node.addComponent(UITransform);
+          ut.setContentSize(160, 284);
+          var opacity = node.addComponent(UIOpacity);
+          opacity.opacity = 0;
+          this._fadeOpacity = opacity;
+          this._fadeOverlay = node;
+          assetManager.loadBundle('mainui', function (bundleErr, bundle) {
+            if (bundleErr || !bundle) {
+              console.error('[LevelFlow] loadBundle failed for FadeOverlay', bundleErr);
+              return;
+            }
+            bundle.load('sprite/tile/tile_00/spriteFrame', SpriteFrame, function (loadErr, frame) {
+              if (loadErr || !frame) {
+                console.error('[LevelFlow] tile_00 load failed for FadeOverlay', loadErr);
+                return;
+              }
+              var sprite = node.addComponent(Sprite);
+              sprite.spriteFrame = frame;
+              sprite.color = new Color(0, 0, 0, 255);
+            });
+          });
+        };
+        _proto._bindStep = function _bindStep() {
+          var _this2 = this;
+          if (this._stepBound) {
+            return;
+          }
+          var gameNode = find('Game');
+          var driver = gameNode ? gameNode.getComponent(FixedStepDriver) : null;
+          if (!driver) {
+            console.error('[LevelFlow] FixedStepDriver not found on Game');
+            return;
+          }
+          driver.registerOnStep(function () {
+            if (_this2.enabled && _this2.node.activeInHierarchy) {
+              _this2._step();
+            }
+          });
+          this._stepBound = true;
+        };
+        _proto._playerY = function _playerY() {
+          var _find$getComponent, _find;
+          var player = (_find$getComponent = (_find = find('World/Player')) == null ? void 0 : _find.getComponent(PlayerController)) != null ? _find$getComponent : null;
+          if (!player) {
+            return null;
+          }
+          return player._y;
+        };
+        _proto._step = function _step() {
+          var flow = getTuning().flow;
+          var floorY = -LEVEL_ROWS * LEVEL_TILE_PX;
+          if (this._state === 'idle') {
+            var py = this._playerY();
+            if (py === null) {
+              return;
+            }
+            if (py < floorY - flow.triggerDepth) {
+              this._state = 'fadeOut';
+              this._t = 0;
+            }
+            return;
+          }
+          if (this._state === 'fadeOut') {
+            this._t += 1;
+            var fadeSteps = flow.fadeSteps;
+            if (this._fadeOpacity) {
+              this._fadeOpacity.opacity = Math.min(255, Math.floor(255 * this._t / fadeSteps));
+            }
+            if (this._t >= fadeSteps) {
+              this._state = 'loading';
+              this._beginLoadScene();
+            }
+            return;
+          }
+          if (this._state === 'loading') {
+            return;
+          }
+        };
+        _proto._beginLoadScene = function _beginLoadScene() {
+          if (this._loadSceneCalled) {
+            return;
+          }
+          this._loadSceneCalled = true;
+          runState.level += 1;
+          director.loadScene('Main');
+        };
+        _createClass(LevelFlow, [{
+          key: "state",
+          get: function get() {
+            return this._state;
+          }
+        }, {
+          key: "fadeOverlay",
+          get: function get() {
+            return this._fadeOverlay;
+          }
+        }]);
+        return LevelFlow;
+      }(Component)) || _class));
+      cclegacy._RF.pop();
+    }
+  };
+});
+
+System.register("chunks:///_virtual/LevelHud.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './RunState.ts'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, Label, Component, runState;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
     }, function (module) {
       cclegacy = module.cclegacy;
       _decorator = module._decorator;
+      Label = module.Label;
+      Component = module.Component;
+    }, function (module) {
+      runState = module.runState;
+    }],
+    execute: function () {
+      var _dec, _class;
+      cclegacy._RF.push({}, "7f4702rH4RDlrJsJLsOAYUZ", "LevelHud", undefined);
+      var ccclass = _decorator.ccclass;
+      var LevelHud = exports('LevelHud', (_dec = ccclass('LevelHud'), _dec(_class = /*#__PURE__*/function (_Component) {
+        _inheritsLoose(LevelHud, _Component);
+        function LevelHud() {
+          var _this;
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+          _this = _Component.call.apply(_Component, [this].concat(args)) || this;
+          _this._label = null;
+          _this._last = -1;
+          return _this;
+        }
+        var _proto = LevelHud.prototype;
+        _proto.onLoad = function onLoad() {
+          this._label = this.getComponent(Label);
+        };
+        _proto.update = function update() {
+          if (!this._label || runState.level === this._last) {
+            return;
+          }
+          this._last = runState.level;
+          this._label.string = "LEVEL " + runState.level;
+        };
+        return LevelHud;
+      }(Component)) || _class));
+      cclegacy._RF.pop();
+    }
+  };
+});
+
+System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './TuningConfig.ts', './FixedStepDriver.ts', './LevelData.ts', './GemManager.ts'], function (exports) {
+  var _inheritsLoose, _createForOfIteratorHelperLoose, cclegacy, _decorator, Color, Graphics, assetManager, Prefab, Node, UITransform, Sprite, find, instantiate, SpriteFrame, Component, getTuning, FixedStepDriver, assertLevel, consumeCrumbleEvents, consumeGemChunkEvents, GEM_CHUNKS, ROOM_INSTANCES, LEVEL_TILE_PX, ROOM_EXITS, SIDE_PORTS, LEVEL_GRID, LEVEL_CRUMBLE, THIN_PLATFORM_SPECS, bottomPortalCenter, GemManager;
+  return {
+    setters: [function (module) {
+      _inheritsLoose = module.inheritsLoose;
+      _createForOfIteratorHelperLoose = module.createForOfIteratorHelperLoose;
+    }, function (module) {
+      cclegacy = module.cclegacy;
+      _decorator = module._decorator;
+      Color = module.Color;
       Graphics = module.Graphics;
       assetManager = module.assetManager;
       Prefab = module.Prefab;
-      instantiate = module.instantiate;
+      Node = module.Node;
+      UITransform = module.UITransform;
       Sprite = module.Sprite;
-      Color = module.Color;
+      find = module.find;
+      instantiate = module.instantiate;
       SpriteFrame = module.SpriteFrame;
       Component = module.Component;
     }, function (module) {
+      getTuning = module.getTuning;
+    }, function (module) {
+      FixedStepDriver = module.FixedStepDriver;
+    }, function (module) {
       assertLevel = module.assertLevel;
-      LEVEL_GRID = module.LEVEL_GRID;
+      consumeCrumbleEvents = module.consumeCrumbleEvents;
+      consumeGemChunkEvents = module.consumeGemChunkEvents;
+      GEM_CHUNKS = module.GEM_CHUNKS;
+      ROOM_INSTANCES = module.ROOM_INSTANCES;
       LEVEL_TILE_PX = module.LEVEL_TILE_PX;
+      ROOM_EXITS = module.ROOM_EXITS;
+      SIDE_PORTS = module.SIDE_PORTS;
+      LEVEL_GRID = module.LEVEL_GRID;
+      LEVEL_CRUMBLE = module.LEVEL_CRUMBLE;
+      THIN_PLATFORM_SPECS = module.THIN_PLATFORM_SPECS;
+      bottomPortalCenter = module.bottomPortalCenter;
+    }, function (module) {
+      GemManager = module.GemManager;
     }],
     execute: function () {
       var _dec, _class;
       cclegacy._RF.push({}, "b4a195sjS9McaPlnwttTCoX", "LevelView", undefined);
       var ccclass = _decorator.ccclass;
+      var CRUMBLE_FRAME_COUNT = 4;
+      var PORTAL_FRAME_COUNT = 16;
+      var GEM_CHUNK_IDLE_FRAME_COUNT = 4;
+      var GEM_CHUNK_BREAK_FRAME_COUNT = 2;
+      var GEM_CHUNK_FRAME_COUNT = GEM_CHUNK_IDLE_FRAME_COUNT + GEM_CHUNK_BREAK_FRAME_COUNT;
+      var TILE_WHITE = new Color(255, 255, 255, 255);
+      var CRUMBLE_HIT_FLASH = new Color(255, 120, 120, 255);
+      var GEM_CHUNK_HIT_FLASH = new Color(255, 140, 140, 255);
       var LevelView = exports('LevelView', (_dec = ccclass('LevelView'), _dec(_class = /*#__PURE__*/function (_Component) {
         _inheritsLoose(LevelView, _Component);
         function LevelView() {
-          return _Component.apply(this, arguments) || this;
+          var _this;
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+          _this = _Component.call.apply(_Component, [this].concat(args)) || this;
+          _this._tileMap = new Map();
+          _this._crumbleFrames = [];
+          _this._crumbleFramesReady = false;
+          _this._flashSteps = new Map();
+          _this._destroyAnims = new Map();
+          _this._portalSprites = [];
+          _this._portalFrames = [];
+          _this._portalAnimStep = 0;
+          _this._portalStepBound = false;
+          _this._gemChunkFrames = [];
+          _this._gemChunkFramesReady = false;
+          _this._gemChunkMap = new Map();
+          _this._gemChunkFlashSteps = new Map();
+          _this._gemChunkDestroyAnims = new Map();
+          _this._gemChunkIdleStep = 0;
+          _this._gemChunkIdleFrame = 0;
+          return _this;
         }
         var _proto = LevelView.prototype;
         _proto.onLoad = function onLoad() {
-          var _this = this;
+          var _this2 = this;
           assertLevel();
+          this._bindPortalStep();
           var graphics = this.getComponent(Graphics);
           if (graphics) {
             graphics.enabled = false;
           }
           window.__dwTiles = this.node;
-
-          // 网格尺寸须与 LEVEL_GRID 一致，为编译时常量；不能读 getTuning（fetch 完成前为旧默认 8）。
           var tileSize = LEVEL_TILE_PX;
           assetManager.loadBundle('mainui', function (bundleErr, bundle) {
             if (bundleErr || !bundle) {
               console.error('[LevelView] tile prefab/frames load failed: ' + bundleErr);
               return;
             }
+            _this2._loadCrumbleFrames(bundle);
+            _this2._loadGemChunkFrames(bundle);
             bundle.load('prefab/Tile', Prefab, function (prefabErr, tilePrefab) {
               if (prefabErr || !tilePrefab) {
                 console.error('[LevelView] tile prefab/frames load failed: ' + prefabErr);
@@ -3418,7 +4308,16 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
                       console.error('[LevelView] tile prefab/frames load failed: ' + frameLoadErr);
                       return;
                     }
-                    _this._buildTileSprites(tilePrefab, frames, tileSize);
+                    _this2._buildTileSprites(tilePrefab, frames, tileSize);
+                    _this2._buildRoomTiles(tilePrefab, frames, tileSize);
+                    _this2._loadPortalFrames(bundle, tilePrefab, tileSize);
+                    bundle.load('sprite/platform/thin_platform/spriteFrame', SpriteFrame, function (thinErr, thinFrame) {
+                      if (thinErr || !thinFrame) {
+                        console.error('[LevelView] thin platform frame load failed: ' + thinErr);
+                        return;
+                      }
+                      _this2._buildThinPlatforms(tilePrefab, thinFrame, tileSize);
+                    });
                   }
                 });
               };
@@ -3427,6 +4326,420 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
               }
             });
           });
+        };
+        _proto.update = function update() {
+          var events = consumeCrumbleEvents();
+          for (var _iterator = _createForOfIteratorHelperLoose(events), _step; !(_step = _iterator()).done;) {
+            var ev = _step.value;
+            this._onCrumble(ev);
+          }
+          this._stepCrumbleAnims();
+          var gemEvents = consumeGemChunkEvents();
+          for (var _iterator2 = _createForOfIteratorHelperLoose(gemEvents), _step2; !(_step2 = _iterator2()).done;) {
+            var _ev = _step2.value;
+            this._onGemChunk(_ev);
+          }
+          this._stepGemChunkAnims();
+        };
+        _proto._loadCrumbleFrames = function _loadCrumbleFrames(bundle) {
+          var _this3 = this;
+          var pending = CRUMBLE_FRAME_COUNT;
+          var loaded = new Array(CRUMBLE_FRAME_COUNT).fill(null);
+          var loadErr = null;
+          var _loop2 = function _loop2(i) {
+            var path = "sprite/platform/crumble_" + String(i).padStart(2, '0') + "/spriteFrame";
+            bundle.load(path, SpriteFrame, function (err, frame) {
+              if (err || !frame) {
+                loadErr = err != null ? err : "missing " + path;
+              } else {
+                loaded[i] = frame;
+              }
+              pending -= 1;
+              if (pending === 0) {
+                if (loadErr || loaded.some(function (f) {
+                  return !f;
+                })) {
+                  console.error('[LevelView] crumble frames load failed: ' + loadErr);
+                  return;
+                }
+                _this3._crumbleFrames = loaded;
+                _this3._crumbleFramesReady = true;
+              }
+            });
+          };
+          for (var i = 0; i < CRUMBLE_FRAME_COUNT; i += 1) {
+            _loop2(i);
+          }
+        };
+        _proto._loadGemChunkFrames = function _loadGemChunkFrames(bundle) {
+          var _this4 = this;
+          var pending = GEM_CHUNK_FRAME_COUNT;
+          var loaded = new Array(GEM_CHUNK_FRAME_COUNT).fill(null);
+          var loadErr = null;
+          var paths = [];
+          for (var i = 0; i < GEM_CHUNK_IDLE_FRAME_COUNT; i += 1) {
+            paths.push("sprite/gemchunk/chunk_idle_" + String(i).padStart(2, '0') + "/spriteFrame");
+          }
+          for (var _i = 0; _i < GEM_CHUNK_BREAK_FRAME_COUNT; _i += 1) {
+            paths.push("sprite/gemchunk/chunk_break_" + String(_i).padStart(2, '0') + "/spriteFrame");
+          }
+          var _loop3 = function _loop3(_i2) {
+            bundle.load(paths[_i2], SpriteFrame, function (err, frame) {
+              if (err || !frame) {
+                loadErr = err != null ? err : "missing " + paths[_i2];
+              } else {
+                loaded[_i2] = frame;
+              }
+              pending -= 1;
+              if (pending === 0) {
+                if (loadErr || loaded.some(function (f) {
+                  return !f;
+                })) {
+                  console.error('[LevelView] gem chunk frames load failed: ' + loadErr);
+                  return;
+                }
+                _this4._gemChunkFrames = loaded;
+                _this4._gemChunkFramesReady = true;
+                _this4._buildGemChunks();
+              }
+            });
+          };
+          for (var _i2 = 0; _i2 < paths.length; _i2 += 1) {
+            _loop3(_i2);
+          }
+        };
+        _proto._buildGemChunks = function _buildGemChunks() {
+          if (!this._gemChunkFramesReady || this._gemChunkFrames.length < GEM_CHUNK_FRAME_COUNT) {
+            return;
+          }
+          for (var i = 0; i < GEM_CHUNKS.length; i += 1) {
+            var spec = GEM_CHUNKS[i];
+            var room = ROOM_INSTANCES[spec.roomIndex];
+            if (!room) {
+              continue;
+            }
+            var node = new Node('GemChunk');
+            this.node.addChild(node);
+            var ut = node.addComponent(UITransform);
+            ut.setContentSize(32, 32);
+            ut.setAnchorPoint(0.5, 0.5);
+            node.setPosition(spec.col * LEVEL_TILE_PX + LEVEL_TILE_PX, room.originY - spec.row * LEVEL_TILE_PX - LEVEL_TILE_PX);
+            var sprite = node.addComponent(Sprite);
+            sprite.spriteFrame = this._gemChunkFrames[0];
+            sprite.color = TILE_WHITE;
+            this._gemChunkMap.set(i, {
+              node: node,
+              sprite: sprite
+            });
+          }
+        };
+        _proto._onGemChunk = function _onGemChunk(ev) {
+          var _find$getComponent, _find;
+          var entry = this._gemChunkMap.get(ev.index);
+          if (!entry) {
+            return;
+          }
+          if (ev.kind === 'hit') {
+            entry.sprite.color = GEM_CHUNK_HIT_FLASH;
+            this._gemChunkFlashSteps.set(ev.index, getTuning().crumble.flashSteps);
+            return;
+          }
+          this._gemChunkFlashSteps["delete"](ev.index);
+          var gm = (_find$getComponent = (_find = find('Game')) == null ? void 0 : _find.getComponent(GemManager)) != null ? _find$getComponent : null;
+          if (gm) {
+            var count = getTuning().gemChunk.gemsPerChunk;
+            for (var g = 0; g < count; g += 1) {
+              var dx = g % 2 === 0 ? -6 : 6;
+              var dy = Math.random() * 8;
+              gm.spawnAt('small', ev.x + dx, ev.y + dy);
+            }
+          }
+          if (!this._gemChunkFramesReady || this._gemChunkFrames.length < GEM_CHUNK_FRAME_COUNT) {
+            entry.node.destroy();
+            this._gemChunkMap["delete"](ev.index);
+            return;
+          }
+          var breakBase = GEM_CHUNK_IDLE_FRAME_COUNT;
+          entry.sprite.spriteFrame = this._gemChunkFrames[breakBase];
+          this._gemChunkDestroyAnims.set(ev.index, {
+            frame: 0,
+            stepsLeft: getTuning().gemChunk.breakStepsPerFrame
+          });
+        };
+        _proto._stepGemChunkAnims = function _stepGemChunkAnims() {
+          for (var _iterator3 = _createForOfIteratorHelperLoose(this._gemChunkFlashSteps), _step3; !(_step3 = _iterator3()).done;) {
+            var _step3$value = _step3.value,
+              index = _step3$value[0],
+              stepsLeft = _step3$value[1];
+            var next = stepsLeft - 1;
+            if (next <= 0) {
+              this._gemChunkFlashSteps["delete"](index);
+              var entry = this._gemChunkMap.get(index);
+              if (entry && !this._gemChunkDestroyAnims.has(index)) {
+                entry.sprite.color = TILE_WHITE;
+              }
+            } else {
+              this._gemChunkFlashSteps.set(index, next);
+            }
+          }
+          var breakSteps = getTuning().gemChunk.breakStepsPerFrame;
+          var breakBase = GEM_CHUNK_IDLE_FRAME_COUNT;
+          for (var _iterator4 = _createForOfIteratorHelperLoose(this._gemChunkDestroyAnims), _step4; !(_step4 = _iterator4()).done;) {
+            var _step4$value = _step4.value,
+              _index = _step4$value[0],
+              anim = _step4$value[1];
+            anim.stepsLeft -= 1;
+            if (anim.stepsLeft > 0) {
+              continue;
+            }
+            var _entry = this._gemChunkMap.get(_index);
+            if (!_entry) {
+              this._gemChunkDestroyAnims["delete"](_index);
+              continue;
+            }
+            if (anim.frame >= GEM_CHUNK_BREAK_FRAME_COUNT - 1) {
+              _entry.node.destroy();
+              this._gemChunkMap["delete"](_index);
+              this._gemChunkDestroyAnims["delete"](_index);
+              continue;
+            }
+            anim.frame += 1;
+            _entry.sprite.spriteFrame = this._gemChunkFrames[breakBase + anim.frame];
+            anim.stepsLeft = breakSteps;
+          }
+          if (this._gemChunkMap.size === 0 || !this._gemChunkFramesReady) {
+            return;
+          }
+          var idleSteps = getTuning().gemChunk.idleStepsPerFrame;
+          this._gemChunkIdleStep += 1;
+          if (this._gemChunkIdleStep < idleSteps) {
+            return;
+          }
+          this._gemChunkIdleStep = 0;
+          this._gemChunkIdleFrame = (this._gemChunkIdleFrame + 1) % GEM_CHUNK_IDLE_FRAME_COUNT;
+          var idleFrame = this._gemChunkFrames[this._gemChunkIdleFrame];
+          for (var _iterator5 = _createForOfIteratorHelperLoose(this._gemChunkMap), _step5; !(_step5 = _iterator5()).done;) {
+            var _step5$value = _step5.value,
+              _index2 = _step5$value[0],
+              _entry2 = _step5$value[1];
+            if (this._gemChunkDestroyAnims.has(_index2)) {
+              continue;
+            }
+            _entry2.sprite.spriteFrame = idleFrame;
+          }
+        };
+        _proto._crumbleKey = function _crumbleKey(ev) {
+          if (ev.roomIndex !== undefined) {
+            return "r" + ev.roomIndex + ":" + ev.row + "," + ev.col;
+          }
+          return ev.row + "," + ev.col;
+        };
+        _proto._onCrumble = function _onCrumble(ev) {
+          var key = this._crumbleKey(ev);
+          var entry = this._tileMap.get(key);
+          if (!entry) {
+            return;
+          }
+          if (ev.kind === 'hit') {
+            entry.sprite.color = CRUMBLE_HIT_FLASH;
+            this._flashSteps.set(key, getTuning().crumble.flashSteps);
+            return;
+          }
+          this._flashSteps["delete"](key);
+          if (!this._crumbleFramesReady || this._crumbleFrames.length < CRUMBLE_FRAME_COUNT) {
+            entry.node.destroy();
+            this._tileMap["delete"](key);
+            return;
+          }
+          var stepsPerFrame = getTuning().crumble.animStepsPerFrame;
+          entry.sprite.spriteFrame = this._crumbleFrames[0];
+          this._destroyAnims.set(key, {
+            frame: 0,
+            stepsLeft: stepsPerFrame
+          });
+        };
+        _proto._stepCrumbleAnims = function _stepCrumbleAnims() {
+          for (var _iterator6 = _createForOfIteratorHelperLoose(this._flashSteps), _step6; !(_step6 = _iterator6()).done;) {
+            var _step6$value = _step6.value,
+              key = _step6$value[0],
+              stepsLeft = _step6$value[1];
+            var next = stepsLeft - 1;
+            if (next <= 0) {
+              this._flashSteps["delete"](key);
+              var entry = this._tileMap.get(key);
+              if (entry && !this._destroyAnims.has(key)) {
+                entry.sprite.color = TILE_WHITE;
+              }
+            } else {
+              this._flashSteps.set(key, next);
+            }
+          }
+          var stepsPerFrame = getTuning().crumble.animStepsPerFrame;
+          for (var _iterator7 = _createForOfIteratorHelperLoose(this._destroyAnims), _step7; !(_step7 = _iterator7()).done;) {
+            var _step7$value = _step7.value,
+              _key2 = _step7$value[0],
+              anim = _step7$value[1];
+            anim.stepsLeft -= 1;
+            if (anim.stepsLeft > 0) {
+              continue;
+            }
+            var _entry3 = this._tileMap.get(_key2);
+            if (!_entry3) {
+              this._destroyAnims["delete"](_key2);
+              continue;
+            }
+            if (anim.frame >= CRUMBLE_FRAME_COUNT - 1) {
+              _entry3.node.destroy();
+              this._tileMap["delete"](_key2);
+              this._destroyAnims["delete"](_key2);
+              continue;
+            }
+            anim.frame += 1;
+            _entry3.sprite.spriteFrame = this._crumbleFrames[anim.frame];
+            anim.stepsLeft = stepsPerFrame;
+          }
+        };
+        _proto._bindPortalStep = function _bindPortalStep() {
+          var _this5 = this;
+          if (this._portalStepBound) {
+            return;
+          }
+          var gameNode = find('Game');
+          var driver = gameNode ? gameNode.getComponent(FixedStepDriver) : null;
+          if (!driver) {
+            console.error('[LevelView] FixedStepDriver not found for portal anim');
+            return;
+          }
+          driver.registerOnStep(function () {
+            if (!_this5.enabled || !_this5.node.activeInHierarchy) {
+              return;
+            }
+            if (_this5._portalSprites.length === 0 || _this5._portalFrames.length < PORTAL_FRAME_COUNT) {
+              return;
+            }
+            _this5._portalAnimStep += 1;
+            var stepsPerFrame = getTuning().room.portalAnimStepsPerFrame;
+            var frame = Math.floor(_this5._portalAnimStep / stepsPerFrame) % PORTAL_FRAME_COUNT;
+            var frameImg = _this5._portalFrames[frame];
+            for (var i = 0; i < _this5._portalSprites.length; i += 1) {
+              _this5._portalSprites[i].spriteFrame = frameImg;
+            }
+          });
+          this._portalStepBound = true;
+        };
+        _proto._loadPortalFrames = function _loadPortalFrames(bundle, tilePrefab, tileSize) {
+          var _this6 = this;
+          var pending = PORTAL_FRAME_COUNT;
+          var loaded = new Array(PORTAL_FRAME_COUNT).fill(null);
+          var loadErr = null;
+          var _loop4 = function _loop4(i) {
+            var path = "sprite/portal/gate_" + String(i).padStart(2, '0') + "/spriteFrame";
+            bundle.load(path, SpriteFrame, function (err, frame) {
+              if (err || !frame) {
+                loadErr = err != null ? err : "missing " + path;
+              } else {
+                loaded[i] = frame;
+              }
+              pending -= 1;
+              if (pending === 0) {
+                if (loadErr || loaded.some(function (f) {
+                  return !f;
+                })) {
+                  console.error('[LevelView] portal frames load failed: ' + loadErr);
+                  return;
+                }
+                _this6._portalFrames = loaded;
+                _this6._buildSidePortals(tilePrefab, tileSize);
+                _this6._buildRoomExits(tilePrefab, tileSize);
+                _this6._buildBottomPortal(tilePrefab, tileSize);
+              }
+            });
+          };
+          for (var i = 0; i < PORTAL_FRAME_COUNT; i += 1) {
+            _loop4(i);
+          }
+        };
+        _proto._buildBottomPortal = function _buildBottomPortal(tilePrefab, tileSize) {
+          var center = bottomPortalCenter();
+          var node = instantiate(tilePrefab);
+          node.name = 'BottomPortal';
+          this.node.addChild(node);
+          node.setPosition(center.x, center.y);
+          var sprite = node.getComponent(Sprite);
+          if (!sprite || this._portalFrames.length === 0) {
+            return;
+          }
+          sprite.spriteFrame = this._portalFrames[0];
+          sprite.color = TILE_WHITE;
+          this._portalSprites.push(sprite);
+        };
+        _proto._buildRoomExits = function _buildRoomExits(tilePrefab, tileSize) {
+          var half = tileSize / 2;
+          for (var i = 0; i < ROOM_EXITS.length; i += 1) {
+            var exit = ROOM_EXITS[i];
+            var room = ROOM_INSTANCES[exit.roomIndex];
+            if (!room) {
+              continue;
+            }
+            var node = instantiate(tilePrefab);
+            node.name = 'RoomExit';
+            this.node.addChild(node);
+            node.setPosition(exit.col * tileSize + half, room.originY - exit.row * tileSize - half);
+            var sprite = node.getComponent(Sprite);
+            if (!sprite || this._portalFrames.length === 0) {
+              continue;
+            }
+            sprite.spriteFrame = this._portalFrames[0];
+            sprite.color = TILE_WHITE;
+            this._portalSprites.push(sprite);
+          }
+        };
+        _proto._buildSidePortals = function _buildSidePortals(tilePrefab, tileSize) {
+          var half = tileSize / 2;
+          for (var i = 0; i < SIDE_PORTS.length; i += 1) {
+            var port = SIDE_PORTS[i];
+            var node = instantiate(tilePrefab);
+            node.name = 'SidePortal';
+            this.node.addChild(node);
+            node.setPosition(port.col * tileSize + half, -port.row * tileSize - half);
+            var sprite = node.getComponent(Sprite);
+            if (!sprite || this._portalFrames.length === 0) {
+              continue;
+            }
+            sprite.spriteFrame = this._portalFrames[0];
+            sprite.color = TILE_WHITE;
+            this._portalSprites.push(sprite);
+          }
+        };
+        _proto._buildRoomTiles = function _buildRoomTiles(tilePrefab, frames, tileSize) {
+          var half = tileSize / 2;
+          for (var ri = 0; ri < ROOM_INSTANCES.length; ri += 1) {
+            var room = ROOM_INSTANCES[ri];
+            for (var row = 0; row < room.grid.length; row += 1) {
+              var cells = room.grid[row];
+              for (var col = 0; col < cells.length; col += 1) {
+                if (cells[col] !== 1) {
+                  continue;
+                }
+                var node = instantiate(tilePrefab);
+                this.node.addChild(node);
+                node.setPosition(col * tileSize + half, room.originY - row * tileSize - half);
+                var sprite = node.getComponent(Sprite);
+                if (!sprite) {
+                  continue;
+                }
+                var frameIndex = (row * 31 + col * 17 + ri * 3) % 8;
+                sprite.spriteFrame = frames[frameIndex];
+                sprite.color = TILE_WHITE;
+                if (room.crumble[row][col] > 0) {
+                  this._tileMap.set("r" + room.index + ":" + row + "," + col, {
+                    node: node,
+                    sprite: sprite
+                  });
+                }
+              }
+            }
+          }
         };
         _proto._buildTileSprites = function _buildTileSprites(tilePrefab, frames, tileSize) {
           var half = tileSize / 2;
@@ -3445,8 +4758,37 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
               }
               var frameIndex = (row * 31 + col * 17) % 8;
               sprite.spriteFrame = frames[frameIndex];
-              // 贴图已含成品色（暗 44/44/58、亮 108/108/128）；Sprite.color 为乘法 tint，再乘会二次压暗，故用纯白
-              sprite.color = new Color(0xff, 0xff, 0xff, 255);
+              sprite.color = TILE_WHITE;
+              if (LEVEL_CRUMBLE[row][col] > 0) {
+                this._tileMap.set(row + "," + col, {
+                  node: node,
+                  sprite: sprite
+                });
+              }
+            }
+          }
+        };
+        _proto._buildThinPlatforms = function _buildThinPlatforms(tilePrefab, frame, tileSize) {
+          var half = tileSize / 2;
+          for (var s = 0; s < THIN_PLATFORM_SPECS.length; s += 1) {
+            var spec = THIN_PLATFORM_SPECS[s];
+            for (var i = 0; i < spec.len; i += 1) {
+              var node = instantiate(tilePrefab);
+              node.name = 'ThinPlatform';
+              this.node.addChild(node);
+              var col = spec.col0 + i;
+              node.setPosition(col * tileSize + half, -spec.row * tileSize);
+              var ut = node.getComponent(UITransform);
+              if (ut) {
+                ut.setAnchorPoint(0.5, 1);
+                ut.setContentSize(24, 9);
+              }
+              var sprite = node.getComponent(Sprite);
+              if (!sprite) {
+                continue;
+              }
+              sprite.spriteFrame = frame;
+              sprite.color = new Color(255, 255, 255, 255);
             }
           }
         };
@@ -3457,15 +4799,15 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
   };
 });
 
-System.register("chunks:///_virtual/main", ['./AudioManager.ts', './FixedStepDriver.ts', './InputState.ts', './KeyboardInput.ts', './TuningConfig.ts', './ViewBootstrap.ts', './stepAccumulator.ts', './Bullet.ts', './BulletPool.ts', './ComboTracker.ts', './Enemy.ts', './EnemyManager.ts', './Gem.ts', './GemManager.ts', './Gunboots.ts', './LevelData.ts', './LevelView.ts', './PlayerController.ts', './PlayerHealth.ts', './WorldScroll.ts', './ChargeBar.ts', './ComboHud.ts', './DebugOverlay.ts', './DebugOverlayLoader.ts', './GameOver.ts', './HeartHud.ts', './HitboxDebug.ts', './HudFrame.ts', './ScoreHud.ts', './TouchControls.ts', './TouchPad.ts'], function () {
+System.register("chunks:///_virtual/main", ['./AudioManager.ts', './FixedStepDriver.ts', './InputState.ts', './KeyboardInput.ts', './RunState.ts', './TuningConfig.ts', './ViewBootstrap.ts', './stepAccumulator.ts', './Bullet.ts', './BulletPool.ts', './ComboTracker.ts', './Enemy.ts', './EnemyManager.ts', './Gem.ts', './GemManager.ts', './Gunboots.ts', './LevelData.ts', './LevelFlow.ts', './LevelView.ts', './PlayerController.ts', './PlayerHealth.ts', './WorldScroll.ts', './RoomManager.ts', './ChargeBar.ts', './ComboHud.ts', './DebugOverlay.ts', './DebugOverlayLoader.ts', './GameOver.ts', './HeartHud.ts', './HitboxDebug.ts', './HudFrame.ts', './LevelHud.ts', './ScoreHud.ts', './TouchControls.ts', './TouchPad.ts'], function () {
   return {
-    setters: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+    setters: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
     execute: function () {}
   };
 });
 
 System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './AudioManager.ts', './FixedStepDriver.ts', './InputState.ts', './TuningConfig.ts', './LevelData.ts'], function (exports) {
-  var _inheritsLoose, _createClass, cclegacy, _decorator, Sprite, find, assetManager, SpriteFrame, UITransform, Component, AudioManager, FixedStepDriver, inputState, initTuning, getTuning, SPAWN_POS, LEVEL_GRID, LEVEL_COLS, LEVEL_ROWS;
+  var _inheritsLoose, _createClass, cclegacy, _decorator, Sprite, find, assetManager, SpriteFrame, UITransform, Component, AudioManager, FixedStepDriver, inputState, initTuning, getTuning, SPAWN_POS, ROOM_BASE_Y, ROOM_ROWS, LEVEL_TILE_PX, THIN_PLATFORM_SPECS, solidAtWorld;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -3490,9 +4832,11 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
       getTuning = module.getTuning;
     }, function (module) {
       SPAWN_POS = module.SPAWN_POS;
-      LEVEL_GRID = module.LEVEL_GRID;
-      LEVEL_COLS = module.LEVEL_COLS;
-      LEVEL_ROWS = module.LEVEL_ROWS;
+      ROOM_BASE_Y = module.ROOM_BASE_Y;
+      ROOM_ROWS = module.ROOM_ROWS;
+      LEVEL_TILE_PX = module.LEVEL_TILE_PX;
+      THIN_PLATFORM_SPECS = module.THIN_PLATFORM_SPECS;
+      solidAtWorld = module.solidAtWorld;
     }],
     execute: function () {
       var _dec, _class;
@@ -3641,11 +4985,23 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           this._vy -= player.gravity;
           var fallCap = player.terminalFallSpeed;
           if (this.firingHeld) {
-            var g = tuning.gunboots;
-            fallCap = g.recoilMode === 'cap' ? player.terminalFallSpeed * g.fallSpeedFactorWhileFiring : player.terminalFallSpeed;
+            var _g = tuning.gunboots;
+            fallCap = _g.recoilMode === 'cap' ? player.terminalFallSpeed * _g.fallSpeedFactorWhileFiring : player.terminalFallSpeed;
           }
           if (this._vy < -fallCap) {
             this._vy = -fallCap;
+          }
+          var g = tuning.gunboots;
+          // 悬浮模式：开火期间把下落速度钳到 hangFallSpeed（0 = 完全定住）
+          if (g.recoilMode === 'hang' && this.firingHeld && !this._onGround) {
+            var target = -Math.max(0, g.hangFallSpeed);
+            var damp = Math.max(1, g.hangDampingSteps);
+            var step = (this._vy - target) / damp;
+            this._vy -= step;
+            // 逼近后消除残差，避免无限逼近留下 0.001 级抖动
+            if (Math.abs(this._vy - target) < 0.02) {
+              this._vy = target;
+            }
           }
           if (!this.controlsLocked && inputState.jumpPressed && this._onGround) {
             var _this$_audio;
@@ -3668,6 +5024,33 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           this._y += moveY;
           this._onGround = false;
           this._separateAxis(tileSize, halfW, halfH, hitOffY, false, 0, moveY);
+          if (this._y < ROOM_BASE_Y - 20 * ROOM_ROWS * LEVEL_TILE_PX) {
+            this._x = SPAWN_POS.x;
+            this._y = SPAWN_POS.y;
+            this._vx = 0;
+            this._vy = 0;
+          }
+          if (!this._onGround && moveY <= 0) {
+            var newBottom = this._y + hitOffY - halfH;
+            var prevBottom = newBottom - moveY;
+            var left = this._x - halfW;
+            var right = this._x + halfW;
+            for (var i = 0; i < THIN_PLATFORM_SPECS.length; i += 1) {
+              var t = THIN_PLATFORM_SPECS[i];
+              var pLeft = t.col0 * LEVEL_TILE_PX;
+              var pRight = (t.col0 + t.len) * LEVEL_TILE_PX;
+              if (right <= pLeft || left >= pRight) {
+                continue;
+              }
+              var surface = -t.row * LEVEL_TILE_PX;
+              if (prevBottom >= surface - EPS && newBottom <= surface) {
+                this._y = surface + halfH - hitOffY;
+                this._vy = 0;
+                this._onGround = true;
+                break;
+              }
+            }
+          }
           this.node.setPosition(this._x, this._y);
           this._updatePlayerAnim();
           inputState.consumeEdges();
@@ -3822,24 +5205,27 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           return target;
         };
         _proto._separateAxis = function _separateAxis(tileSize, halfW, halfH, hitOffY, horizontal, moveX, moveY) {
+          var cell = tileSize;
           var left = this._x - halfW;
           var right = this._x + halfW;
           var bottom = this._y + hitOffY - halfH;
           var top = this._y + hitOffY + halfH;
-          var col0 = Math.max(0, Math.floor(left / tileSize));
-          var col1 = Math.min(LEVEL_COLS - 1, Math.floor((right - EPS) / tileSize));
-          var row0 = Math.max(0, Math.floor(-top / tileSize));
-          var row1 = Math.min(LEVEL_ROWS - 1, Math.floor((-bottom - EPS) / tileSize));
+          var col0 = Math.floor(left / cell);
+          var col1 = Math.floor((right - EPS) / cell);
+          var row0 = Math.floor(-top / cell);
+          var row1 = Math.floor((-bottom - EPS) / cell);
           var hit = false;
           for (var row = row0; row <= row1; row++) {
             for (var col = col0; col <= col1; col++) {
-              if (LEVEL_GRID[row][col] !== 1) {
+              var cx = col * cell + cell / 2;
+              var cy = -row * cell - cell / 2;
+              if (!solidAtWorld(cx, cy)) {
                 continue;
               }
-              var tileLeft = col * tileSize;
-              var tileRight = (col + 1) * tileSize;
-              var tileTop = -row * tileSize;
-              var tileBottom = -(row + 1) * tileSize;
+              var tileLeft = col * cell;
+              var tileRight = (col + 1) * cell;
+              var tileTop = -row * cell;
+              var tileBottom = -(row + 1) * cell;
               if (horizontal) {
                 if (moveX > 0) {
                   this._x = Math.min(this._x, tileLeft - halfW);
@@ -3876,6 +5262,10 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
         };
         _proto.applyRecoil = function applyRecoil(_gunboots) {
           var g = getTuning().gunboots;
+          if (g.recoilMode === 'hang') {
+            // 悬浮模式：不施加任何向上冲量，垂直速度由 _applyHang 每步钳制
+            return;
+          }
           this._vy += g.recoilImpulse;
           if (g.recoilMode === 'cap') {
             this._vy += g.recoilPop;
@@ -4111,6 +5501,212 @@ System.register("chunks:///_virtual/PlayerHealth.ts", ['./rollupPluginModLoBabel
         }]);
         return PlayerHealth;
       }(Component)) || _class));
+      cclegacy._RF.pop();
+    }
+  };
+});
+
+System.register("chunks:///_virtual/RoomManager.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './LevelData.ts', './PlayerController.ts'], function (exports) {
+  var _inheritsLoose, _createClass, cclegacy, _decorator, find, Component, FixedStepDriver, SIDE_PORTS, ROOM_INSTANCES, ROOM_EXITS, LEVEL_TILE_PX, PlayerController;
+  return {
+    setters: [function (module) {
+      _inheritsLoose = module.inheritsLoose;
+      _createClass = module.createClass;
+    }, function (module) {
+      cclegacy = module.cclegacy;
+      _decorator = module._decorator;
+      find = module.find;
+      Component = module.Component;
+    }, function (module) {
+      FixedStepDriver = module.FixedStepDriver;
+    }, function (module) {
+      SIDE_PORTS = module.SIDE_PORTS;
+      ROOM_INSTANCES = module.ROOM_INSTANCES;
+      ROOM_EXITS = module.ROOM_EXITS;
+      LEVEL_TILE_PX = module.LEVEL_TILE_PX;
+    }, function (module) {
+      PlayerController = module.PlayerController;
+    }],
+    execute: function () {
+      var _dec, _class;
+      cclegacy._RF.push({}, "a7e3ckfLYRLbp8ajF0OS3pi", "RoomManager", undefined);
+      var ccclass = _decorator.ccclass;
+      var RoomManager = exports('RoomManager', (_dec = ccclass('RoomManager'), _dec(_class = /*#__PURE__*/function (_Component) {
+        _inheritsLoose(RoomManager, _Component);
+        function RoomManager() {
+          var _this;
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+          _this = _Component.call.apply(_Component, [this].concat(args)) || this;
+          _this._player = null;
+          _this._inRoom = false;
+          _this._currentRoom = -1;
+          _this._returnPos = {
+            x: 0,
+            y: 0
+          };
+          _this._stepBound = false;
+          return _this;
+        }
+        var _proto = RoomManager.prototype;
+        _proto.onLoad = function onLoad() {
+          this._bindStep();
+        };
+        _proto.start = function start() {
+          var _find$getComponent, _find;
+          this._player = (_find$getComponent = (_find = find('World/Player')) == null ? void 0 : _find.getComponent(PlayerController)) != null ? _find$getComponent : null;
+          if (!this._player) {
+            console.error('[RoomManager] PlayerController not found at World/Player');
+          }
+          window.__dwRoom = this;
+        };
+        _proto._bindStep = function _bindStep() {
+          var _this2 = this;
+          if (this._stepBound) {
+            return;
+          }
+          var gameNode = find('Game');
+          var driver = gameNode ? gameNode.getComponent(FixedStepDriver) : null;
+          if (!driver) {
+            console.error('[RoomManager] FixedStepDriver not found on Game');
+            return;
+          }
+          driver.registerOnStep(function () {
+            if (_this2.enabled && _this2.node.activeInHierarchy) {
+              _this2._step();
+            }
+          });
+          this._stepBound = true;
+        };
+        _proto._step = function _step() {
+          if (!this._player) {
+            return;
+          }
+          var pc = this._player;
+          var hb = this._player.getHitbox();
+          var halfW = hb.w / 2;
+          var halfH = hb.h / 2;
+          var left = hb.x - halfW;
+          var right = hb.x + halfW;
+          var bottom = hb.y - halfH;
+          var top = hb.y + halfH;
+          if (!this._inRoom) {
+            for (var i = 0; i < SIDE_PORTS.length; i += 1) {
+              var port = SIDE_PORTS[i];
+              if (this._aabbOverlapsTile(left, right, bottom, top, port)) {
+                this._enterRoom(port, pc);
+                return;
+              }
+            }
+            return;
+          }
+          var room = ROOM_INSTANCES[this._currentRoom];
+          if (room && pc._y > room.originY) {
+            this._leaveRoom(pc);
+            return;
+          }
+          if (this._inRoom) {
+            for (var _i = 0; _i < ROOM_EXITS.length; _i += 1) {
+              var exit = ROOM_EXITS[_i];
+              if (exit.roomIndex !== this._currentRoom) {
+                continue;
+              }
+              var exitRoom = ROOM_INSTANCES[exit.roomIndex];
+              if (!exitRoom) {
+                continue;
+              }
+              var tileLeft = exit.col * LEVEL_TILE_PX;
+              var tileRight = tileLeft + LEVEL_TILE_PX;
+              var tileTop = exitRoom.originY - exit.row * LEVEL_TILE_PX;
+              var tileBottom = tileTop - LEVEL_TILE_PX;
+              if (left < tileRight && right > tileLeft && bottom < tileTop && top > tileBottom) {
+                this._leaveRoom(pc);
+                return;
+              }
+            }
+          }
+        };
+        _proto._leaveRoom = function _leaveRoom(pc) {
+          // 抬到门洞上方，避免落回时二次进入
+          var returnY = this._returnPos.y + 12;
+          pc._x = this._returnPos.x;
+          pc._y = returnY;
+          pc._vx = 0;
+          pc._vy = 0;
+          this._player.node.setPosition(this._returnPos.x, returnY);
+          this._inRoom = false;
+          this._currentRoom = -1;
+        };
+        _proto._aabbOverlapsTile = function _aabbOverlapsTile(left, right, bottom, top, port) {
+          var tileLeft = port.col * LEVEL_TILE_PX;
+          var tileRight = tileLeft + LEVEL_TILE_PX;
+          var tileTop = -port.row * LEVEL_TILE_PX;
+          var tileBottom = tileTop - LEVEL_TILE_PX;
+          return left < tileRight && right > tileLeft && bottom < tileTop && top > tileBottom;
+        };
+        _proto._enterRoom = function _enterRoom(port, pc) {
+          var room = ROOM_INSTANCES[port.roomIndex];
+          if (!room) {
+            return;
+          }
+          this._returnPos.x = pc._x;
+          this._returnPos.y = pc._y;
+          var destX = 4.5 * LEVEL_TILE_PX;
+          var destY = room.originY - 15 * LEVEL_TILE_PX;
+          pc._x = destX;
+          pc._y = destY;
+          pc._vx = 0;
+          pc._vy = 0;
+          this._player.node.setPosition(destX, destY);
+          this._inRoom = true;
+          this._currentRoom = port.roomIndex;
+        };
+        _createClass(RoomManager, [{
+          key: "inRoom",
+          get: function get() {
+            return this._inRoom;
+          }
+        }, {
+          key: "currentRoomIndex",
+          get: function get() {
+            return this._currentRoom;
+          }
+        }]);
+        return RoomManager;
+      }(Component)) || _class));
+      cclegacy._RF.pop();
+    }
+  };
+});
+
+System.register("chunks:///_virtual/RunState.ts", ['cc'], function (exports) {
+  var cclegacy;
+  return {
+    setters: [function (module) {
+      cclegacy = module.cclegacy;
+    }],
+    execute: function () {
+      cclegacy._RF.push({}, "140a759w/JN5LZ1Nwr9vP38", "RunState", undefined);
+      /**
+       * 一局内的跨关卡状态。模块级变量，director.loadScene('Main') 不会重置（同一 JS 上下文）。
+       */
+      var RunStateImpl = /*#__PURE__*/function () {
+        function RunStateImpl() {
+          this.level = 1;
+          this.score = 0;
+        }
+        var _proto = RunStateImpl.prototype;
+        _proto.reset = function reset() {
+          this.level = 1;
+          this.score = 0;
+        };
+        return RunStateImpl;
+      }();
+      var runState = exports('runState', new RunStateImpl());
+
+      // 调试钩子（Hermes CDP 复验用）
+      window.__dwRunState = runState;
       cclegacy._RF.pop();
     }
   };
@@ -4635,11 +6231,13 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
           chargeCostPerShot: 1,
           rechargeDelaySteps: 45,
           rechargeStepsPerCell: 12,
-          recoilMode: 'cap',
+          recoilMode: 'hang',
           fallSpeedFactorWhileFiring: 0.45,
-          recoilPop: 0.55,
-          recoilMaxRise: 2.0,
-          recoilImpulse: 3.4
+          recoilPop: 0,
+          recoilMaxRise: 6.0,
+          recoilImpulse: 0,
+          hangFallSpeed: 0,
+          hangDampingSteps: 2
         },
         health: {
           maxHp: 4,
@@ -4676,6 +6274,24 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
           batWidth: 15,
           batHeight: 12,
           batOffsetY: 2
+        },
+        crumble: {
+          hp: 3,
+          flashSteps: 4,
+          animStepsPerFrame: 3
+        },
+        room: {
+          portalAnimStepsPerFrame: 4
+        },
+        gemChunk: {
+          hp: 3,
+          gemsPerChunk: 4,
+          idleStepsPerFrame: 8,
+          breakStepsPerFrame: 3
+        },
+        flow: {
+          fadeSteps: 14,
+          triggerDepth: 4
         }
       };
       var current = cloneTuning(DEFAULT_TUNING);
@@ -4746,7 +6362,9 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
             fallSpeedFactorWhileFiring: tuning.gunboots.fallSpeedFactorWhileFiring,
             recoilPop: tuning.gunboots.recoilPop,
             recoilMaxRise: tuning.gunboots.recoilMaxRise,
-            recoilImpulse: tuning.gunboots.recoilImpulse
+            recoilImpulse: tuning.gunboots.recoilImpulse,
+            hangFallSpeed: tuning.gunboots.hangFallSpeed,
+            hangDampingSteps: tuning.gunboots.hangDampingSteps
           },
           health: {
             maxHp: tuning.health.maxHp,
@@ -4783,6 +6401,24 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
             batWidth: tuning.enemyHitbox.batWidth,
             batHeight: tuning.enemyHitbox.batHeight,
             batOffsetY: tuning.enemyHitbox.batOffsetY
+          },
+          crumble: {
+            hp: tuning.crumble.hp,
+            flashSteps: tuning.crumble.flashSteps,
+            animStepsPerFrame: tuning.crumble.animStepsPerFrame
+          },
+          room: {
+            portalAnimStepsPerFrame: tuning.room.portalAnimStepsPerFrame
+          },
+          gemChunk: {
+            hp: tuning.gemChunk.hp,
+            gemsPerChunk: tuning.gemChunk.gemsPerChunk,
+            idleStepsPerFrame: tuning.gemChunk.idleStepsPerFrame,
+            breakStepsPerFrame: tuning.gemChunk.breakStepsPerFrame
+          },
+          flow: {
+            fadeSteps: tuning.flow.fadeSteps,
+            triggerDepth: tuning.flow.triggerDepth
           }
         };
       }
@@ -4893,6 +6529,10 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
         var stompRaw = isRecord(raw.stomp) ? raw.stomp : null;
         var comboRaw = isRecord(raw.combo) ? raw.combo : null;
         var enemyHitboxRaw = isRecord(raw.enemyHitbox) ? raw.enemyHitbox : null;
+        var crumbleRaw = isRecord(raw.crumble) ? raw.crumble : null;
+        var roomRaw = isRecord(raw.room) ? raw.room : null;
+        var gemChunkRaw = isRecord(raw.gemChunk) ? raw.gemChunk : null;
+        var flowRaw = isRecord(raw.flow) ? raw.flow : null;
         return {
           loop: {
             fixedStepHz: readNumberValue(raw.loop.fixedStepHz, 'loop.fixedStepHz'),
@@ -4943,7 +6583,9 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
             fallSpeedFactorWhileFiring: readNumberValue(raw.gunboots.fallSpeedFactorWhileFiring, 'gunboots.fallSpeedFactorWhileFiring'),
             recoilPop: readNumberValue(raw.gunboots.recoilPop, 'gunboots.recoilPop'),
             recoilMaxRise: readNumberValue(raw.gunboots.recoilMaxRise, 'gunboots.recoilMaxRise'),
-            recoilImpulse: readNumberValue(raw.gunboots.recoilImpulse, 'gunboots.recoilImpulse')
+            recoilImpulse: readNumberValue(raw.gunboots.recoilImpulse, 'gunboots.recoilImpulse'),
+            hangFallSpeed: readNumberValue(raw.gunboots.hangFallSpeed, 'gunboots.hangFallSpeed'),
+            hangDampingSteps: readNumberValue(raw.gunboots.hangDampingSteps, 'gunboots.hangDampingSteps')
           },
           health: {
             maxHp: healthRaw ? readNumberValue(healthRaw.maxHp, 'health.maxHp') : DEFAULT_TUNING.health.maxHp,
@@ -4980,6 +6622,24 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
             batWidth: enemyHitboxRaw ? readNumberValue(enemyHitboxRaw.batWidth, 'enemyHitbox.batWidth') : DEFAULT_TUNING.enemyHitbox.batWidth,
             batHeight: enemyHitboxRaw ? readNumberValue(enemyHitboxRaw.batHeight, 'enemyHitbox.batHeight') : DEFAULT_TUNING.enemyHitbox.batHeight,
             batOffsetY: enemyHitboxRaw ? readNumberValue(enemyHitboxRaw.batOffsetY, 'enemyHitbox.batOffsetY') : DEFAULT_TUNING.enemyHitbox.batOffsetY
+          },
+          crumble: {
+            hp: crumbleRaw ? readNumberValue(crumbleRaw.hp, 'crumble.hp') : DEFAULT_TUNING.crumble.hp,
+            flashSteps: crumbleRaw ? readNumberValue(crumbleRaw.flashSteps, 'crumble.flashSteps') : DEFAULT_TUNING.crumble.flashSteps,
+            animStepsPerFrame: crumbleRaw ? readNumberValue(crumbleRaw.animStepsPerFrame, 'crumble.animStepsPerFrame') : DEFAULT_TUNING.crumble.animStepsPerFrame
+          },
+          room: {
+            portalAnimStepsPerFrame: roomRaw ? readNumberValue(roomRaw.portalAnimStepsPerFrame, 'room.portalAnimStepsPerFrame') : DEFAULT_TUNING.room.portalAnimStepsPerFrame
+          },
+          gemChunk: {
+            hp: gemChunkRaw ? readNumberValue(gemChunkRaw.hp, 'gemChunk.hp') : DEFAULT_TUNING.gemChunk.hp,
+            gemsPerChunk: gemChunkRaw ? readNumberValue(gemChunkRaw.gemsPerChunk, 'gemChunk.gemsPerChunk') : DEFAULT_TUNING.gemChunk.gemsPerChunk,
+            idleStepsPerFrame: gemChunkRaw ? readNumberValue(gemChunkRaw.idleStepsPerFrame, 'gemChunk.idleStepsPerFrame') : DEFAULT_TUNING.gemChunk.idleStepsPerFrame,
+            breakStepsPerFrame: gemChunkRaw ? readNumberValue(gemChunkRaw.breakStepsPerFrame, 'gemChunk.breakStepsPerFrame') : DEFAULT_TUNING.gemChunk.breakStepsPerFrame
+          },
+          flow: {
+            fadeSteps: flowRaw ? readNumberValue(flowRaw.fadeSteps, 'flow.fadeSteps') : DEFAULT_TUNING.flow.fadeSteps,
+            triggerDepth: flowRaw ? readNumberValue(flowRaw.triggerDepth, 'flow.triggerDepth') : DEFAULT_TUNING.flow.triggerDepth
           }
         };
       }
@@ -5397,8 +7057,8 @@ System.register("chunks:///_virtual/ViewBootstrap.ts", ['./rollupPluginModLoBabe
   };
 });
 
-System.register("chunks:///_virtual/WorldScroll.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './TuningConfig.ts', './LevelData.ts'], function (exports) {
-  var _inheritsLoose, cclegacy, _decorator, find, Component, FixedStepDriver, initTuning, getTuning, LEVEL_ROWS;
+System.register("chunks:///_virtual/WorldScroll.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './FixedStepDriver.ts', './TuningConfig.ts', './LevelData.ts', './RoomManager.ts'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, find, Component, FixedStepDriver, initTuning, getTuning, ROOM_BASE_Y, ROOM_INSTANCES, ROOM_ROWS, LEVEL_TILE_PX, LEVEL_VIEW_OFFSET_X, LEVEL_ROWS, RoomManager;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -5413,7 +7073,14 @@ System.register("chunks:///_virtual/WorldScroll.ts", ['./rollupPluginModLoBabelH
       initTuning = module.initTuning;
       getTuning = module.getTuning;
     }, function (module) {
+      ROOM_BASE_Y = module.ROOM_BASE_Y;
+      ROOM_INSTANCES = module.ROOM_INSTANCES;
+      ROOM_ROWS = module.ROOM_ROWS;
+      LEVEL_TILE_PX = module.LEVEL_TILE_PX;
+      LEVEL_VIEW_OFFSET_X = module.LEVEL_VIEW_OFFSET_X;
       LEVEL_ROWS = module.LEVEL_ROWS;
+    }, function (module) {
+      RoomManager = module.RoomManager;
     }],
     execute: function () {
       var _dec, _class;
@@ -5439,6 +7106,9 @@ System.register("chunks:///_virtual/WorldScroll.ts", ['./rollupPluginModLoBabelH
         };
         _proto.start = function start() {
           this._resolveRefs();
+          if (this._world && !this._world.getComponent(RoomManager)) {
+            this._world.addComponent(RoomManager);
+          }
           this._bindStep();
           this._scroll();
         };
@@ -5486,14 +7156,32 @@ System.register("chunks:///_virtual/WorldScroll.ts", ['./rollupPluginModLoBabelH
             return;
           }
           var tuning = getTuning();
+          var tileSize = tuning.level.tileSize;
           var halfH = tuning.render.designHeight / 2;
-          var wellBottom = -LEVEL_ROWS * tuning.level.tileSize;
+          var wellBottom = -LEVEL_ROWS * tileSize;
           var minCamY = wellBottom + halfH;
           var maxCamY = -halfH;
-          var camY = this._player.position.y;
-          camY = Math.min(maxCamY, Math.max(minCamY, camY));
+          var py = this._player.position.y;
+          var camY = py;
+          var roomFixedCam = false;
+          if (py < ROOM_BASE_Y) {
+            for (var i = 0; i < ROOM_INSTANCES.length; i += 1) {
+              var room = ROOM_INSTANCES[i];
+              var roomBottom = room.originY - ROOM_ROWS * tileSize;
+              if (py <= room.originY && py > roomBottom) {
+                var roomCenterY = room.originY - ROOM_ROWS * LEVEL_TILE_PX / 2;
+                camY = roomCenterY;
+                roomFixedCam = true;
+                break;
+              }
+            }
+          }
+          if (!roomFixedCam) {
+            camY = Math.min(maxCamY, Math.max(minCamY, camY));
+          }
           var camWorldY = this._camNode ? this._camNode.worldPosition.y : 0;
-          this._world.setPosition(0, camWorldY - camY, 0);
+          // -8：176px 世界在 160px 视口内居中，左右墙各露 8px
+          this._world.setPosition(LEVEL_VIEW_OFFSET_X, camWorldY - camY, 0);
         };
         return WorldScroll;
       }(Component)) || _class));

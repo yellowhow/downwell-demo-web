@@ -1,5 +1,5 @@
 {
-  "meta": { "version": "0.9.1", "date": "2026-11-05" },
+  "meta": { "version": "0.9.6", "date": "2026-11-05" },
   "loop": {
     "fixedStepHz":   { "value": 60, "version": "0.1.0", "date": "2026-11-04", "why": "DW-01 实录：18 个房间 speed 全为 60" },
     "maxCatchUpSteps": { "value": 5, "version": "0.1.0", "date": "2026-11-04", "why": "防后台切回时补步雪崩" }
@@ -45,11 +45,13 @@
     "chargeCostPerShot":   { "value": 1,     "version": "0.3.0", "date": "2026-11-04", "why": "一格一发，8 发打空" },
     "rechargeDelaySteps":  { "value": 45,    "version": "0.3.0", "date": "2026-11-04", "why": "停火 0.75s 后开始回充，DW-02 的 playerChargeTimer 推断" },
     "rechargeStepsPerCell":{ "value": 12,    "version": "0.3.0", "date": "2026-11-04", "why": "每格 0.2s，打空后 1.6s 回满" },
-    "recoilMode":          { "value": "impulse", "version": "0.3.1", "date": "2026-11-04", "why": "用户试玩拍板：每发都要有向上冲量（impulse），不要 cap 的持续压制模型" },
+    "recoilMode":          { "value": "hang", "version": "0.9.3", "date": "2026-11-05", "why": "冲量模型无法稳定悬停；改速度目标钳制，开火像悬浮不往上飘" },
     "fallSpeedFactorWhileFiring": { "value": 0.45, "version": "0.3.0", "date": "2026-11-04", "why": "开火时下落速度上限 = terminal × 0.45，即 DW-02 的「半速悬停」" },
-    "recoilPop":           { "value": 0.55,  "version": "0.3.0", "date": "2026-11-04", "why": "每发一次性抬头量 px/step，给点射节律的触感；cap 模式下也叠加" },
+    "recoilPop":           { "value": 0,     "version": "0.9.3", "date": "2026-11-05", "why": "hang 模式不用 pop 冲量" },
     "recoilMaxRise":       { "value": 6.0,   "version": "0.3.2", "date": "2026-11-04", "why": "recoilImpulse 提到 5.6 后，旧上限 4.0 会把单发冲量砍掉 1.6；放宽到 6.0 让冲量完整生效，仍不足以飞出屏幕顶部" },
-    "recoilImpulse":       { "value": 5.6,   "version": "0.3.2", "date": "2026-11-04", "why": "用户要求每发可见抬头；原 3.4 被重力(0.4×8步)抵消，净 +0.2 px/step 肉眼不可见。改 5.6 → 每发净 +2.4 px/step，从终端 -4.73 一发打到 +0.87（短暂上升），连射可持续悬浮但受 8 格充能限制" }
+    "recoilImpulse":       { "value": 0,     "version": "0.9.3", "date": "2026-11-05", "why": "hang 模式不施加向上冲量，垂直速度由 hangFallSpeed 钳制" },
+    "hangFallSpeed":       { "value": 0, "version": "0.9.3", "date": "2026-11-05", "why": "开火时垂直速度被钳到 -hangFallSpeed。0 = 完全定住(真悬浮)；>0 = 缓慢下沉，取 1.0 约为终速的 21%，手感像悬停。用户要「悬浮不要往上」，故默认 0" },
+    "hangDampingSteps":    { "value": 2, "version": "0.9.3", "date": "2026-11-05", "why": "从当前 vy 逼近目标值用 2 步，避免瞬移感；0 或 1 = 立即到位" }
   },
   "health": {
     "maxHp":              { "value": 4,   "version": "0.4.0", "date": "2026-11-04", "why": "Downwell 原作初始 4 心，DW-03 §7 给出受击无敌 0.5~0.7s 的建议区间" },
@@ -86,5 +88,23 @@
     "minForTip":     { "value": 3,   "version": "0.7.0", "date": "2026-11-04", "why": "连到 3 才开始显示 COMBO 数字，避免每次都刷屏" },
     "rewardEvery":   { "value": 5,   "version": "0.7.0", "date": "2026-11-04", "why": "每 5 连发一颗宝石（DW-09：达标发宝石而非发分数）" },
     "rewardKind":    "medium"
+  },
+  "crumble": {
+    "hp": { "value": 3, "version": "0.9.2", "date": "2026-11-05", "why": "厚平台每格吃 3 发子弹。与原版 crumbleBlock 的 4 帧破损进度对齐（3 次命中播 3 个中间帧）" },
+    "flashSteps": { "value": 4, "version": "0.9.2", "date": "2026-11-05", "why": "命中闪红持续 4 步（约 66ms），够看清但不拖沓" },
+    "animStepsPerFrame": { "value": 3, "version": "0.9.2", "date": "2026-11-05", "why": "破碎动画 4 帧 × 3 步 = 12 步（200ms）播完消失" }
+  },
+  "room": {
+    "portalAnimStepsPerFrame": { "value": 4, "version": "0.9.4", "date": "2026-11-05", "why": "传送门 16 帧，4 步/帧 = 15fps，转起来有明显流动感" }
+  },
+  "gemChunk": {
+    "hp": { "value": 3, "version": "0.9.5", "date": "2026-11-05", "why": "宝石堆 3 发打碎，与可碎砖一致" },
+    "gemsPerChunk": { "value": 4, "version": "0.9.5", "date": "2026-11-05", "why": "一个 2x2 宝石堆爆 4 颗小宝石，折合 4 分；原版一段房间约 2 堆 = 8 分，与一次连击奖励相当" },
+    "idleStepsPerFrame": { "value": 8, "version": "0.9.5", "date": "2026-11-05", "why": "闪光循环 4 帧 x 8 步 = 32 步一轮(0.53s)，慢速呼吸感，不抢注意力" },
+    "breakStepsPerFrame": { "value": 3, "version": "0.9.5", "date": "2026-11-05", "why": "破裂 2 帧各 3 步 = 6 步(100ms)，干脆利落" }
+  },
+  "flow": {
+    "fadeSteps": { "value": 14, "version": "0.9.6", "date": "2026-11-05", "why": "淡出约 14 步(0.23s)，够快不拖节奏；原版过场也是瞬切感" },
+    "triggerDepth": { "value": 4, "version": "0.9.6", "date": "2026-11-05", "why": "玩家中心掉到井底地面以下 4px 就触发，避免站在洞口边缘就被传送" }
   }
 }
