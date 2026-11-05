@@ -850,8 +850,8 @@ System.register("chunks:///_virtual/DebugOverlay.ts", ['./rollupPluginModLoBabel
   };
 });
 
-System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './DebugOverlay.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Gunboots.ts', './ChargeBar.ts', './HeartHud.ts', './GameOver.ts', './ScoreHud.ts', './ComboHud.ts', './HudFrame.ts', './PlayerHealth.ts', './AudioManager.ts'], function (exports) {
-  var _inheritsLoose, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, view, settings, Component, DebugOverlay, FixedStepDriver, getTuning, getTuningSource, BulletPool, Gunboots, ChargeBar, HeartHud, GameOver, ScoreHud, ComboHud, HudFrame, PlayerHealth, AudioManager;
+System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './DebugOverlay.ts', './HitboxDebug.ts', './FixedStepDriver.ts', './TuningConfig.ts', './BulletPool.ts', './Gunboots.ts', './ChargeBar.ts', './HeartHud.ts', './GameOver.ts', './ScoreHud.ts', './ComboHud.ts', './HudFrame.ts', './PlayerHealth.ts', './AudioManager.ts'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, find, assetManager, Prefab, instantiate, UITransform, Node, view, settings, Component, DebugOverlay, HitboxDebug, FixedStepDriver, getTuning, getTuningSource, BulletPool, Gunboots, ChargeBar, HeartHud, GameOver, ScoreHud, ComboHud, HudFrame, PlayerHealth, AudioManager;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -863,11 +863,14 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
       Prefab = module.Prefab;
       instantiate = module.instantiate;
       UITransform = module.UITransform;
+      Node = module.Node;
       view = module.view;
       settings = module.settings;
       Component = module.Component;
     }, function (module) {
       DebugOverlay = module.DebugOverlay;
+    }, function (module) {
+      HitboxDebug = module.HitboxDebug;
     }, function (module) {
       FixedStepDriver = module.FixedStepDriver;
     }, function (module) {
@@ -908,6 +911,7 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
         _proto.onLoad = function onLoad() {
           var _this = this;
           this._ensureGameplayComponents();
+          this._ensureHitboxDebug();
           var canvas = find('Canvas');
           if (!canvas) {
             console.error('Canvas not found');
@@ -966,6 +970,22 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
           }
           if (player && !player.getComponent(PlayerHealth)) {
             player.addComponent(PlayerHealth);
+          }
+        };
+        _proto._ensureHitboxDebug = function _ensureHitboxDebug() {
+          var world = find('World');
+          if (!world) {
+            console.error('[DebugOverlayLoader] World not found for HitboxDebug');
+            return;
+          }
+          var node = world.getChildByName('HitboxDebug');
+          if (!node) {
+            node = new Node('HitboxDebug');
+            world.addChild(node);
+          }
+          node.setSiblingIndex(world.children.length - 1);
+          if (!node.getComponent(HitboxDebug)) {
+            node.addComponent(HitboxDebug);
           }
         };
         _proto._loadChargeBar = function _loadChargeBar(canvas) {
@@ -1169,8 +1189,8 @@ System.register("chunks:///_virtual/DebugOverlayLoader.ts", ['./rollupPluginModL
   };
 });
 
-System.register("chunks:///_virtual/Enemy.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc'], function (exports) {
-  var _inheritsLoose, cclegacy, _decorator, UITransform, Sprite, Color, assetManager, SpriteFrame, Component;
+System.register("chunks:///_virtual/Enemy.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './TuningConfig.ts'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, UITransform, Sprite, Color, assetManager, SpriteFrame, Component, getTuning;
   return {
     setters: [function (module) {
       _inheritsLoose = module.inheritsLoose;
@@ -1183,6 +1203,8 @@ System.register("chunks:///_virtual/Enemy.ts", ['./rollupPluginModLoBabelHelpers
       assetManager = module.assetManager;
       SpriteFrame = module.SpriteFrame;
       Component = module.Component;
+    }, function (module) {
+      getTuning = module.getTuning;
     }],
     execute: function () {
       var _dec, _class;
@@ -1279,13 +1301,26 @@ System.register("chunks:///_virtual/Enemy.ts", ['./rollupPluginModLoBabelHelpers
           }
           return false;
         };
+        _proto.getHitbox = function getHitbox() {
+          var eh = getTuning().enemyHitbox;
+          var isSnail = this.kind === 'snail';
+          var w = isSnail ? eh.snailWidth : eh.batWidth;
+          var h = isSnail ? eh.snailHeight : eh.batHeight;
+          var off = isSnail ? eh.snailOffsetY : eh.batOffsetY;
+          var p = this.node.position;
+          return {
+            x: p.x,
+            y: p.y + off,
+            w: w,
+            h: h
+          };
+        };
         _proto._stepSnail = function _stepSnail(tileSize, isSolidAt) {
           var x = this.node.position.x;
           var y = this.node.position.y;
-          var ut = this.getComponent(UITransform);
-          var halfW = ut ? ut.width / 2 : 16;
-          var halfH = ut ? ut.height / 2 : 16;
-          var bottom = y - halfH;
+          var hb = this.getHitbox();
+          var halfW = hb.w / 2;
+          var bottom = hb.y - hb.h / 2;
           var row = Math.floor((-bottom - EPS) / tileSize);
           var probeX = x + this.vx;
           var frontCol = this.vx > 0 ? Math.floor((probeX + halfW) / tileSize) : Math.floor((probeX - halfW) / tileSize);
@@ -1459,13 +1494,16 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
           _this._audio = null;
           _this._combo = null;
           _this._comboWarned = false;
+          _this._playerCtrl = null;
           return _this;
         }
         var _proto = EnemyManager.prototype;
         _proto.onLoad = function onLoad() {
           var _this2 = this,
             _find$getComponent,
-            _find;
+            _find,
+            _find$getComponent2,
+            _find2;
           this._world = find('World');
           if (!this._world) {
             console.error('[EnemyManager] World node not found');
@@ -1507,6 +1545,7 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
             console.error('[EnemyManager] ComboTracker not found on Game');
             this._comboWarned = true;
           }
+          this._playerCtrl = (_find$getComponent2 = (_find2 = find('World/Player')) == null ? void 0 : _find2.getComponent(PlayerController)) != null ? _find$getComponent2 : null;
           if (typeof window !== 'undefined') {
             window.__dwEnemies = this;
             window.__dwEnemyList = this._active;
@@ -1571,7 +1610,6 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
           return enemy;
         };
         _proto._step = function _step() {
-          var _playerCtrl$velocity$;
           var tileSize = getTuning().level.tileSize;
           var isSolidAt = function isSolidAt(col, row) {
             if (row < 0 || row >= LEVEL_ROWS || col < 0 || col >= LEVEL_COLS) {
@@ -1586,8 +1624,8 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
             }
           }
           if (!this._bulletPool) {
-            var _find$getComponent2, _find2;
-            this._bulletPool = (_find$getComponent2 = (_find2 = find('Game')) == null ? void 0 : _find2.getComponent(BulletPool)) != null ? _find$getComponent2 : null;
+            var _find$getComponent3, _find3;
+            this._bulletPool = (_find$getComponent3 = (_find3 = find('Game')) == null ? void 0 : _find3.getComponent(BulletPool)) != null ? _find$getComponent3 : null;
           }
           var pool = this._bulletPool;
           if (!pool) {
@@ -1609,14 +1647,11 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
               if (!_enemy.alive) {
                 continue;
               }
-              var eut = _enemy.getComponent(UITransform);
-              if (!eut) {
-                continue;
-              }
-              var ehw = eut.width / 2;
-              var ehh = eut.height / 2;
-              var ex = _enemy.node.position.x;
-              var ey = _enemy.node.position.y;
+              var eh = _enemy.getHitbox();
+              var ex = eh.x;
+              var ey = eh.y;
+              var ehw = eh.w / 2;
+              var ehh = eh.h / 2;
               if (Math.abs(ex - bx) < ehw + bhw && Math.abs(ey - by) < ehh + bhh) {
                 pool.recycle(bullet);
                 if (_enemy.damage(1)) {
@@ -1629,41 +1664,30 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
             }
           }
           if (!this._playerHealth) {
-            var _find$getComponent3, _find3;
-            this._playerHealth = (_find$getComponent3 = (_find3 = find('World/Player')) == null ? void 0 : _find3.getComponent(PlayerHealth)) != null ? _find$getComponent3 : null;
+            var _find$getComponent4, _find4;
+            this._playerHealth = (_find$getComponent4 = (_find4 = find('World/Player')) == null ? void 0 : _find4.getComponent(PlayerHealth)) != null ? _find$getComponent4 : null;
           }
           var playerHealth = this._playerHealth;
           if (!playerHealth || playerHealth.isDead) {
             return;
           }
-          var playerNode = find('World/Player');
-          if (!playerNode) {
+          var playerCtrl = this._playerCtrl;
+          if (!playerCtrl) {
             return;
           }
-          var player = getTuning().player;
-          var phw = player.bodyWidth / 2;
-          var phh = player.bodyHeight / 2;
-          var px = playerNode.position.x;
-          var py = playerNode.position.y;
-          var playerCtrl = playerNode.getComponent(PlayerController);
-          var pVy = (_playerCtrl$velocity$ = playerCtrl == null ? void 0 : playerCtrl.velocity.y) != null ? _playerCtrl$velocity$ : 0;
+          var ph = playerCtrl.getHitbox();
+          var pVy = playerCtrl.velocity.y;
           var stomp = getTuning().stomp;
-          var playerFootY = py - phh;
-          if (playerCtrl && pVy < 0) {
+          var playerFootY = ph.y - ph.h / 2;
+          if (pVy < 0) {
             for (var _ei = 0; _ei < this._active.length; _ei += 1) {
               var _enemy2 = this._active[_ei];
               if (!_enemy2.alive) {
                 continue;
               }
-              var _eut = _enemy2.getComponent(UITransform);
-              if (!_eut) {
-                continue;
-              }
-              var _ehw = _eut.width / 2;
-              var _ehh = _eut.height / 2;
-              var _ex = _enemy2.node.position.x;
-              var _ey = _enemy2.node.position.y;
-              if (Math.abs(_ex - px) < _ehw + phw && Math.abs(_ey - py) < _ehh + phh && playerFootY - _ey > stomp.toleranceY) {
+              var _eh = _enemy2.getHitbox();
+              var overlap = Math.abs(_eh.x - ph.x) < (_eh.w + ph.w) / 2 && Math.abs(_eh.y - ph.y) < (_eh.h + ph.h) / 2;
+              if (overlap && playerFootY - _eh.y > stomp.toleranceY) {
                 var _this$_audio;
                 if (_enemy2.damage(999)) {
                   var _this$_combo2;
@@ -1681,16 +1705,10 @@ System.register("chunks:///_virtual/EnemyManager.ts", ['./rollupPluginModLoBabel
             if (!_enemy3.alive) {
               continue;
             }
-            var _eut2 = _enemy3.getComponent(UITransform);
-            if (!_eut2) {
-              continue;
-            }
-            var _ehw2 = _eut2.width / 2;
-            var _ehh2 = _eut2.height / 2;
-            var _ex2 = _enemy3.node.position.x;
-            var _ey2 = _enemy3.node.position.y;
-            if (Math.abs(_ex2 - px) < _ehw2 + phw && Math.abs(_ey2 - py) < _ehh2 + phh) {
-              if (playerHealth.takeDamage(1, _ex2)) {
+            var _eh2 = _enemy3.getHitbox();
+            var _overlap = Math.abs(_eh2.x - ph.x) < (_eh2.w + ph.w) / 2 && Math.abs(_eh2.y - ph.y) < (_eh2.h + ph.h) / 2;
+            if (_overlap) {
+              if (playerHealth.takeDamage(1, _eh2.x)) {
                 break;
               }
             }
@@ -2680,6 +2698,150 @@ System.register("chunks:///_virtual/HeartHud.ts", ['./rollupPluginModLoBabelHelp
   };
 });
 
+System.register("chunks:///_virtual/HitboxDebug.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc', './TuningConfig.ts', './LevelData.ts', './PlayerController.ts'], function (exports) {
+  var _inheritsLoose, cclegacy, _decorator, Graphics, find, Layers, Color, Component, getTuning, LEVEL_GRID, LEVEL_COLS, LEVEL_ROWS, PlayerController;
+  return {
+    setters: [function (module) {
+      _inheritsLoose = module.inheritsLoose;
+    }, function (module) {
+      cclegacy = module.cclegacy;
+      _decorator = module._decorator;
+      Graphics = module.Graphics;
+      find = module.find;
+      Layers = module.Layers;
+      Color = module.Color;
+      Component = module.Component;
+    }, function (module) {
+      getTuning = module.getTuning;
+    }, function (module) {
+      LEVEL_GRID = module.LEVEL_GRID;
+      LEVEL_COLS = module.LEVEL_COLS;
+      LEVEL_ROWS = module.LEVEL_ROWS;
+    }, function (module) {
+      PlayerController = module.PlayerController;
+    }],
+    execute: function () {
+      var _dec, _class;
+      cclegacy._RF.push({}, "c7e918qi01Oap8BLY5aazxA", "HitboxDebug", undefined);
+      var ccclass = _decorator.ccclass;
+      var EPS = 1e-4;
+      var TILE_CULL_PAD = 64;
+      var HitboxDebug = exports('HitboxDebug', (_dec = ccclass('HitboxDebug'), _dec(_class = /*#__PURE__*/function (_Component) {
+        _inheritsLoose(HitboxDebug, _Component);
+        function HitboxDebug() {
+          var _this;
+          for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+            args[_key] = arguments[_key];
+          }
+          _this = _Component.call.apply(_Component, [this].concat(args)) || this;
+          _this._graphics = null;
+          _this._enabledDraw = true;
+          _this._playerCtrl = null;
+          return _this;
+        }
+        var _proto = HitboxDebug.prototype;
+        _proto.onLoad = function onLoad() {
+          var _this$getComponent, _find$getComponent, _find;
+          if (typeof window !== 'undefined') {
+            var w = window;
+            if (w.__dwHitboxOn === undefined) {
+              w.__dwHitboxOn = true;
+            }
+          }
+          this._applyUiLayer(this.node);
+          this._graphics = (_this$getComponent = this.getComponent(Graphics)) != null ? _this$getComponent : this.addComponent(Graphics);
+          this._playerCtrl = (_find$getComponent = (_find = find('World/Player')) == null ? void 0 : _find.getComponent(PlayerController)) != null ? _find$getComponent : null;
+        };
+        _proto._applyUiLayer = function _applyUiLayer(node) {
+          node.layer = Layers.Enum.UI_2D;
+          for (var i = 0; i < node.children.length; i += 1) {
+            this._applyUiLayer(node.children[i]);
+          }
+        };
+        _proto.setEnabled = function setEnabled(on) {
+          this._enabledDraw = on;
+          if (!on) {
+            var _this$_graphics;
+            (_this$_graphics = this._graphics) == null || _this$_graphics.clear();
+          }
+        };
+        _proto.update = function update() {
+          var g = this._graphics;
+          if (!g) {
+            return;
+          }
+          var winOn = typeof window === 'undefined' || window.__dwHitboxOn !== false;
+          if (!this._enabledDraw || !winOn) {
+            g.clear();
+            return;
+          }
+          g.clear();
+          g.lineWidth = 1;
+          var playerCtrl = this._playerCtrl;
+          if (!playerCtrl) {
+            return;
+          }
+          var tuning = getTuning();
+          var ph = playerCtrl.getHitbox();
+          var pos = playerCtrl.position;
+          var visual = {
+            x: pos.x,
+            y: pos.y,
+            w: tuning.player.bodyWidth,
+            h: tuning.player.bodyHeight
+          };
+          this._strokeRect(g, new Color(64, 128, 255, 255), visual);
+          this._strokeRect(g, new Color(255, 64, 64, 255), ph);
+          this._drawNearbyTiles(g, ph);
+          var active = window.__dwEnemyList;
+          if (active) {
+            for (var i = 0; i < active.length; i += 1) {
+              var enemy = active[i];
+              if (!(enemy != null && enemy.alive)) {
+                continue;
+              }
+              this._strokeRect(g, new Color(255, 208, 64, 255), enemy.getHitbox());
+            }
+          }
+        };
+        _proto._drawNearbyTiles = function _drawNearbyTiles(g, ph) {
+          var tileSize = getTuning().level.tileSize;
+          var pad = TILE_CULL_PAD;
+          var left = ph.x - ph.w / 2 - pad;
+          var right = ph.x + ph.w / 2 + pad;
+          var bottom = ph.y - ph.h / 2 - pad;
+          var top = ph.y + ph.h / 2 + pad;
+          var col0 = Math.max(0, Math.floor(left / tileSize));
+          var col1 = Math.min(LEVEL_COLS - 1, Math.floor((right - EPS) / tileSize));
+          var row0 = Math.max(0, Math.floor(-top / tileSize));
+          var row1 = Math.min(LEVEL_ROWS - 1, Math.floor((-bottom - EPS) / tileSize));
+          g.strokeColor = new Color(64, 255, 128, 255);
+          for (var row = row0; row <= row1; row += 1) {
+            for (var col = col0; col <= col1; col += 1) {
+              if (LEVEL_GRID[row][col] !== 1) {
+                continue;
+              }
+              var tileLeft = col * tileSize;
+              var tileBottom = -(row + 1) * tileSize;
+              g.rect(tileLeft, tileBottom, tileSize, tileSize);
+              g.stroke();
+            }
+          }
+        };
+        _proto._strokeRect = function _strokeRect(g, color, box) {
+          g.strokeColor = color;
+          var x = box.x - box.w / 2;
+          var y = box.y - box.h / 2;
+          g.rect(x, y, box.w, box.h);
+          g.stroke();
+        };
+        return HitboxDebug;
+      }(Component)) || _class));
+      cclegacy._RF.pop();
+    }
+  };
+});
+
 System.register("chunks:///_virtual/HudFrame.ts", ['./rollupPluginModLoBabelHelpers.js', 'cc'], function (exports) {
   var _inheritsLoose, _createForOfIteratorHelperLoose, cclegacy, _decorator, find, Component;
   return {
@@ -3295,9 +3457,9 @@ System.register("chunks:///_virtual/LevelView.ts", ['./rollupPluginModLoBabelHel
   };
 });
 
-System.register("chunks:///_virtual/main", ['./AudioManager.ts', './FixedStepDriver.ts', './InputState.ts', './KeyboardInput.ts', './TuningConfig.ts', './ViewBootstrap.ts', './stepAccumulator.ts', './Bullet.ts', './BulletPool.ts', './ComboTracker.ts', './Enemy.ts', './EnemyManager.ts', './Gem.ts', './GemManager.ts', './Gunboots.ts', './LevelData.ts', './LevelView.ts', './PlayerController.ts', './PlayerHealth.ts', './WorldScroll.ts', './ChargeBar.ts', './ComboHud.ts', './DebugOverlay.ts', './DebugOverlayLoader.ts', './GameOver.ts', './HeartHud.ts', './HudFrame.ts', './ScoreHud.ts', './TouchControls.ts', './TouchPad.ts'], function () {
+System.register("chunks:///_virtual/main", ['./AudioManager.ts', './FixedStepDriver.ts', './InputState.ts', './KeyboardInput.ts', './TuningConfig.ts', './ViewBootstrap.ts', './stepAccumulator.ts', './Bullet.ts', './BulletPool.ts', './ComboTracker.ts', './Enemy.ts', './EnemyManager.ts', './Gem.ts', './GemManager.ts', './Gunboots.ts', './LevelData.ts', './LevelView.ts', './PlayerController.ts', './PlayerHealth.ts', './WorldScroll.ts', './ChargeBar.ts', './ComboHud.ts', './DebugOverlay.ts', './DebugOverlayLoader.ts', './GameOver.ts', './HeartHud.ts', './HitboxDebug.ts', './HudFrame.ts', './ScoreHud.ts', './TouchControls.ts', './TouchPad.ts'], function () {
   return {
-    setters: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+    setters: [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
     execute: function () {}
   };
 });
@@ -3457,8 +3619,11 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           var tuning = getTuning();
           var player = tuning.player;
           var tileSize = tuning.level.tileSize;
-          var halfW = player.bodyWidth / 2;
-          var halfH = player.bodyHeight / 2;
+          var hitW = player.hitboxWidth;
+          var hitH = player.hitboxHeight;
+          var halfW = hitW / 2;
+          var halfH = hitH / 2;
+          var hitOffY = player.hitboxOffsetY;
           var accelSteps = Math.max(1, player.accelSteps);
           var dv = player.horizontalSpeed / accelSteps;
           var targetVx = 0;
@@ -3497,11 +3662,11 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           }
           var moveX = this._vx;
           this._x += moveX;
-          this._separateAxis(tileSize, halfW, halfH, true, moveX, 0);
+          this._separateAxis(tileSize, halfW, halfH, hitOffY, true, moveX, 0);
           var moveY = this._vy;
           this._y += moveY;
           this._onGround = false;
-          this._separateAxis(tileSize, halfW, halfH, false, 0, moveY);
+          this._separateAxis(tileSize, halfW, halfH, hitOffY, false, 0, moveY);
           this.node.setPosition(this._x, this._y);
           this._updatePlayerAnim();
           inputState.consumeEdges();
@@ -3648,11 +3813,11 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
           }
           return target;
         };
-        _proto._separateAxis = function _separateAxis(tileSize, halfW, halfH, horizontal, moveX, moveY) {
+        _proto._separateAxis = function _separateAxis(tileSize, halfW, halfH, hitOffY, horizontal, moveX, moveY) {
           var left = this._x - halfW;
           var right = this._x + halfW;
-          var bottom = this._y - halfH;
-          var top = this._y + halfH;
+          var bottom = this._y + hitOffY - halfH;
+          var top = this._y + hitOffY + halfH;
           var col0 = Math.max(0, Math.floor(left / tileSize));
           var col1 = Math.min(LEVEL_COLS - 1, Math.floor((right - EPS) / tileSize));
           var row0 = Math.max(0, Math.floor(-top / tileSize));
@@ -3676,11 +3841,11 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
                   hit = true;
                 }
               } else if (moveY < 0) {
-                this._y = Math.max(this._y, tileTop + halfH);
+                this._y = Math.max(this._y, tileTop + halfH - hitOffY);
                 this._onGround = true;
                 hit = true;
               } else if (moveY > 0) {
-                this._y = Math.min(this._y, tileBottom - halfH);
+                this._y = Math.min(this._y, tileBottom - halfH - hitOffY);
                 hit = true;
               }
             }
@@ -3723,6 +3888,15 @@ System.register("chunks:///_virtual/PlayerController.ts", ['./rollupPluginModLoB
         _proto.bounceFromStomp = function bounceFromStomp() {
           this._vy = getTuning().stomp.bounceVy;
           this._onGround = false;
+        };
+        _proto.getHitbox = function getHitbox() {
+          var p = getTuning().player;
+          return {
+            x: this._x,
+            y: this._y + p.hitboxOffsetY,
+            w: p.hitboxWidth,
+            h: p.hitboxHeight
+          };
         };
         _createClass(PlayerController, [{
           key: "_leftHeld",
@@ -4420,6 +4594,9 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
         player: {
           bodyWidth: 24,
           bodyHeight: 24,
+          hitboxWidth: 12,
+          hitboxHeight: 16,
+          hitboxOffsetY: -3,
           terminalFallSpeed: 4.7333,
           gravity: 0.4,
           horizontalSpeed: 1.2,
@@ -4482,6 +4659,14 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
           minForTip: 3,
           rewardEvery: 5,
           rewardKind: 'medium'
+        },
+        enemyHitbox: {
+          snailWidth: 18,
+          snailHeight: 24,
+          snailOffsetY: 0,
+          batWidth: 15,
+          batHeight: 12,
+          batOffsetY: 2
         }
       };
       var current = cloneTuning(DEFAULT_TUNING);
@@ -4515,6 +4700,9 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
           player: {
             bodyWidth: tuning.player.bodyWidth,
             bodyHeight: tuning.player.bodyHeight,
+            hitboxWidth: tuning.player.hitboxWidth,
+            hitboxHeight: tuning.player.hitboxHeight,
+            hitboxOffsetY: tuning.player.hitboxOffsetY,
             terminalFallSpeed: tuning.player.terminalFallSpeed,
             gravity: tuning.player.gravity,
             horizontalSpeed: tuning.player.horizontalSpeed,
@@ -4577,6 +4765,14 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
             minForTip: tuning.combo.minForTip,
             rewardEvery: tuning.combo.rewardEvery,
             rewardKind: tuning.combo.rewardKind
+          },
+          enemyHitbox: {
+            snailWidth: tuning.enemyHitbox.snailWidth,
+            snailHeight: tuning.enemyHitbox.snailHeight,
+            snailOffsetY: tuning.enemyHitbox.snailOffsetY,
+            batWidth: tuning.enemyHitbox.batWidth,
+            batHeight: tuning.enemyHitbox.batHeight,
+            batOffsetY: tuning.enemyHitbox.batOffsetY
           }
         };
       }
@@ -4686,6 +4882,7 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
         var gemsRaw = isRecord(raw.gems) ? raw.gems : null;
         var stompRaw = isRecord(raw.stomp) ? raw.stomp : null;
         var comboRaw = isRecord(raw.combo) ? raw.combo : null;
+        var enemyHitboxRaw = isRecord(raw.enemyHitbox) ? raw.enemyHitbox : null;
         return {
           loop: {
             fixedStepHz: readNumberValue(raw.loop.fixedStepHz, 'loop.fixedStepHz'),
@@ -4699,6 +4896,9 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
           player: {
             bodyWidth: readNumberValue(raw.player.bodyWidth, 'player.bodyWidth'),
             bodyHeight: readNumberValue(raw.player.bodyHeight, 'player.bodyHeight'),
+            hitboxWidth: readNumberValue(raw.player.hitboxWidth, 'player.hitboxWidth'),
+            hitboxHeight: readNumberValue(raw.player.hitboxHeight, 'player.hitboxHeight'),
+            hitboxOffsetY: readNumberValue(raw.player.hitboxOffsetY, 'player.hitboxOffsetY'),
             terminalFallSpeed: readNumberValue(raw.player.terminalFallSpeed, 'player.terminalFallSpeed'),
             gravity: readNumberValue(raw.player.gravity, 'player.gravity'),
             horizontalSpeed: readNumberValue(raw.player.horizontalSpeed, 'player.horizontalSpeed'),
@@ -4761,6 +4961,14 @@ System.register("chunks:///_virtual/TuningConfig.ts", ['./rollupPluginModLoBabel
             minForTip: comboRaw ? readNumberValue(comboRaw.minForTip, 'combo.minForTip') : DEFAULT_TUNING.combo.minForTip,
             rewardEvery: comboRaw ? readNumberValue(comboRaw.rewardEvery, 'combo.rewardEvery') : DEFAULT_TUNING.combo.rewardEvery,
             rewardKind: comboRaw ? readComboRewardKind(comboRaw) : DEFAULT_TUNING.combo.rewardKind
+          },
+          enemyHitbox: {
+            snailWidth: enemyHitboxRaw ? readNumberValue(enemyHitboxRaw.snailWidth, 'enemyHitbox.snailWidth') : DEFAULT_TUNING.enemyHitbox.snailWidth,
+            snailHeight: enemyHitboxRaw ? readNumberValue(enemyHitboxRaw.snailHeight, 'enemyHitbox.snailHeight') : DEFAULT_TUNING.enemyHitbox.snailHeight,
+            snailOffsetY: enemyHitboxRaw ? readNumberValue(enemyHitboxRaw.snailOffsetY, 'enemyHitbox.snailOffsetY') : DEFAULT_TUNING.enemyHitbox.snailOffsetY,
+            batWidth: enemyHitboxRaw ? readNumberValue(enemyHitboxRaw.batWidth, 'enemyHitbox.batWidth') : DEFAULT_TUNING.enemyHitbox.batWidth,
+            batHeight: enemyHitboxRaw ? readNumberValue(enemyHitboxRaw.batHeight, 'enemyHitbox.batHeight') : DEFAULT_TUNING.enemyHitbox.batHeight,
+            batOffsetY: enemyHitboxRaw ? readNumberValue(enemyHitboxRaw.batOffsetY, 'enemyHitbox.batOffsetY') : DEFAULT_TUNING.enemyHitbox.batOffsetY
           }
         };
       }

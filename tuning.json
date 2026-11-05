@@ -1,5 +1,5 @@
 {
-  "meta": { "version": "0.8.0", "date": "2026-11-04" },
+  "meta": { "version": "0.9.0", "date": "2026-11-05" },
   "loop": {
     "fixedStepHz":   { "value": 60, "version": "0.1.0", "date": "2026-11-04", "why": "DW-01 实录：18 个房间 speed 全为 60" },
     "maxCatchUpSteps": { "value": 5, "version": "0.1.0", "date": "2026-11-04", "why": "防后台切回时补步雪崩" }
@@ -12,6 +12,9 @@
   "player": {
     "bodyWidth":         { "value": 24,      "version": "0.2.0", "date": "2026-11-04", "why": "DW-13 美术规范：主角 24x24" },
     "bodyHeight":        { "value": 24,      "version": "0.2.0", "date": "2026-11-04", "why": "同上" },
+    "hitboxWidth":       { "value": 12,      "version": "0.9.0", "date": "2026-11-05", "why": "视觉宽 idle 9 / air 13（实测 bbox），取 12 覆盖 air 的绝大多数像素，并比画布 24 小一半" },
+    "hitboxHeight":      { "value": 16,      "version": "0.9.0", "date": "2026-11-05", "why": "视觉高 14，留 2px 余量；关键是让底边落在视觉脚底，见 hitboxOffsetY" },
+    "hitboxOffsetY":     { "value": -3,      "version": "0.9.0", "date": "2026-11-05", "why": "画布 24 居中时脚底在 local y=-11；hitbox 高 16 要底边对齐 -11，则中心 = -11+8 = -3" },
     "terminalFallSpeed": { "value": 4.7333,  "version": "0.2.0", "date": "2026-11-04", "why": "一屏 284px / 1.0s / 60 步长 = 4.733 px/step（DW-17 §3.2 区间 3.9~4.7 取上沿，拍板项①已定 1.0s/屏）" },
     "gravity":           { "value": 0.4,     "version": "0.2.0", "date": "2026-11-04", "why": "DW-17 §4 推荐区间 0.35~0.5 px/step²，取中值" },
     "horizontalSpeed":   { "value": 1.2,     "version": "0.2.0", "date": "2026-11-04", "why": "1s 跨 72px = 3 身位（DW-17 §3.2）" },
@@ -64,6 +67,14 @@
     "lifeSteps":   { "value": 180, "version": "0.5.0", "date": "2026-11-04", "why": "3 秒存活，DW-09 明确宝石会过期，形成快捡压力" },
     "blinkSteps":  { "value": 60,  "version": "0.5.0", "date": "2026-11-04", "why": "最后 1 秒闪烁预警，对应 DW-09 的 sfxGemDisappearWarn 语汇" },
     "chargePerGem":{ "value": 1,   "version": "0.5.0", "date": "2026-11-04", "why": "DW-09：宝石拾取入账到枪靴充能，scrRechargeGem → gainCharge，每颗回 1 格" }
+  },
+  "enemyHitbox": {
+    "snailWidth":   { "value": 18, "version": "0.9.0", "date": "2026-11-05", "why": "蜗牛视觉 18×24（实测 bbox）" },
+    "snailHeight":  { "value": 24, "version": "0.9.0", "date": "2026-11-05", "why": "同上" },
+    "snailOffsetY": { "value": 0,  "version": "0.9.0", "date": "2026-11-05", "why": "视觉 local_y (-12,+12) 正好居中于画布 32，脚底线 -12 = hitbox 底边 -12" },
+    "batWidth":     { "value": 15, "version": "0.9.0", "date": "2026-11-05", "why": "蝙蝠视觉 15×11（实测 bbox）" },
+    "batHeight":    { "value": 12, "version": "0.9.0", "date": "2026-11-05", "why": "同上" },
+    "batOffsetY":   { "value": 2,  "version": "0.9.0", "date": "2026-11-05", "why": "视觉 local_y (-4,+7)，中心 +1.5，取 2 让 hitbox 落在视觉框内" }
   },
   "stomp": {
     "bounceVy":      { "value": 3.2,  "version": "0.5.0", "date": "2026-11-04", "why": "踩踏弹起，约跳跃初速 5.99 的 53%，能连踩但跳不了最高" },
